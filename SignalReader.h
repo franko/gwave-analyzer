@@ -1,4 +1,6 @@
-class wav_reader {
+#pragma once
+
+class SignalReader {
 public:
     enum sample_e { real_sample, complex_sample };
 
@@ -7,8 +9,8 @@ public:
     void move_to(int pos);
 };
 
-class fft_workspace {
+class FFTWorkspace {
 public:
     void ensure_size(int n);
-    double *buffer;
+    double *buffer();
 };

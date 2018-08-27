@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include "wav_reader.h"
+#include "SignalReader.h"
 
 #define TAU 6.28318530717958647692529
 
@@ -74,31 +74,36 @@ static void fft(double value[], const int n) {
     }
 }
 
-int fft_wav(wav_reader& reader, const int wav_position, const int sample_number, fft_workspace& workspace) {
-    const int sample_number_2p = ceiltopow(sample_number);
-
-    workspace.ensure_size(sample_number_2p);
-
-    if (sample_number_2p == sample_number) {
-        reader.read_samples(wav_position, sample_number_2p, workspace.buffer, wav_reader::complex_sample);
-    } else {
-        const double wavelength_step = double(sample_number) / double(sample_number_2p);
-        reader.move_to(wav_position);
+/* Read m samples from signal where m < n and n = 2^p for some integer p. 
+   The signal is interpolated using n sampling point at regular intervals and
+   written into buffer. */
+static void read_samples_pow2_interp(SignalReader& reader, double buffer[], const int m, const int n) {
+        const double wavelength_step = double(m) / double(n);
         double ya = reader.read_sample();
         double yb = reader.read_sample();
         double ir = 0.0;
-        for (int i = 0, iad = 1; i < sample_number_2p; i++, ir += wavelength_step) {
-            int imin = (int) ir;
+        for (int i = 0, iad = 1; i < n; i++, ir += wavelength_step) {
+            int imin = int(ir);
             if (imin >= iad) {
                 ya = yb;
                 yb = reader.read_sample();
                 iad++;
             }
-            workspace.buffer[2 * i] = ya * (imin + 1 - ir) + yb * (ir - imin);
-            workspace.buffer[2 * i + 1] = 0.0;
+            buffer[2 * i] = ya * (imin + 1 - ir) + yb * (ir - imin);
+            buffer[2 * i + 1] = 0.0;
         }
-    }
+}
 
-    fft(workspace.buffer, sample_number_2p);  
+int fft_wav(SignalReader& reader, const int wav_position, const int sample_number, FFTWorkspace& workspace) {
+    const int sample_number_2p = ceiltopow(sample_number);
+    workspace.ensure_size(sample_number_2p);
+    double *buffer = workspace.buffer();
+    if (sample_number_2p == sample_number) {
+        reader.read_samples(wav_position, sample_number_2p, buffer, SignalReader::complex_sample);
+    } else {
+        reader.move_to(wav_position);
+        read_samples_pow2_interp(reader, buffer, sample_number, sample_number_2p);
+    }
+    fft(buffer, sample_number_2p);
     return 0;
 }
