@@ -1,12 +1,9 @@
 CC = gcc
-OFL= -O3 -fstrength-reduce -fmove-all-movables -frerun-loop-opt -funroll-loops -ffast-math -fomit-frame-pointer -Wno-uninitialized
-#OFL= -O3 -fstrength-reduce -fmove-all-movables -frerun-loop-opt -funroll-loops -ffast-math -Wno-uninitialized
+OFL= -O3 -ffast-math -fomit-frame-pointer
 DFL= -g
-#PROF= -pg
 PROF=
 CFLAGS = -pipe $(OFL) $(PROF) -Wall
 LIB =  -lm
-#PLLIB= -L/usr/X11R6/lib -lplot -lXaw -lXmu -lXt -lSM -lICE -lXext -lX11
 XINC= -I/usr/X11R6/include
 GTKINC= `gtk-config --cflags`
 GTKLIB= `gtk-config --libs`
