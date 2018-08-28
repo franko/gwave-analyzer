@@ -13,40 +13,40 @@
 #define MAXAMPTOL 0.05
 
 typedef struct {
-  long int offs_inizio;
-  int durata_nota;
-  int nota; 
-  int pd;
-  int nd;
+    long int offs_inizio;
+    int durata_nota;
+    int nota; 
+    int pd;
+    int nd;
 } event_t;
 
 typedef struct
 {
-  int freq;
-  int num_can;
-  int lun_sample;
-  int lun_word;
-  int num_sample;
+    int freq;
+    int num_can;
+    int lun_sample;
+    int lun_word;
+    int num_sample;
 }
 wav_spec_t;
 
 typedef struct
 {
-  int offset;
-  int canal_method;
-  int vis_len;
-  double y_magn;
+    int offset;
+    int canal_method;
+    int vis_len;
+    double y_magn;
 }
 wav_visual_t;
 
 typedef struct
 {
-  event_t *begin;
-  int number;
-  int alloc;
+    event_t *begin;
+    int number;
+    int alloc;
 }
 event_list_t;
-  
+    
 /*  extern long int dur, offs, l_filedur; */
 /*  extern int freq, lunw, lun_sam; */
 /*  extern int stereo; */
@@ -68,52 +68,52 @@ extern double filedur;
 extern __inline__ long int
 ceiltopow( long int n )
 {
-  register long int out = 1;
-  while ( out < n )
-    out = out << 1;
-  return out;
+    register long int out = 1;
+    while ( out < n )
+        out = out << 1;
+    return out;
 }
 
 extern __inline__ int
 log2( long int n )
 {
-  register int j = 0;
-  while ( n > 1 ) {
-    n = n >> 1;
-    j++;
-  }
-  return j;
+    register int j = 0;
+    while ( n > 1 ) {
+        n = n >> 1;
+        j++;
+    }
+    return j;
 }
  
 extern __inline__ int
 pow2( int n )
 {
-  int i=1;
-  return i << n;
+    int i=1;
+    return i << n;
 }
 
 extern __inline__ void
 *xmalloc( size_t n )
 {
-  register void *ret = (void *) malloc( n );
-  if ( ! ret ) {
-    fprintf( stderr, "Errore nell'allocare memoria\n" );
-    exit(1);
-  }
-  return ret;
+    register void *ret = (void *) malloc( n );
+    if ( ! ret ) {
+        fprintf( stderr, "Errore nell'allocare memoria\n" );
+        exit(1);
+    }
+    return ret;
 }
 
 extern __inline__ void
 *xrealloc( void *pt, size_t n )
 {
-  register void *ret = (void *) realloc( pt, n );
-  if ( ! ret ) {
-    fprintf( stderr, "Errore nell'allocare memoria\n" );
-    exit(1);
-  }
-  return ret;
+    register void *ret = (void *) realloc( pt, n );
+    if ( ! ret ) {
+        fprintf( stderr, "Errore nell'allocare memoria\n" );
+        exit(1);
+    }
+    return ret;
 }
-     
+         
 extern void
 nome_nota( int nota, char *str );
 
@@ -137,7 +137,7 @@ trova_pic( char *puro, unsigned int nod, double soglia, double *pintens );
 
 extern double
 detfreq( long int nod, char *puro, char *nullo, double *chiq, double *pintens,
-	 int loc_offs );
+                 int loc_offs );
 
 extern void
 in_alloca();
