@@ -93,7 +93,7 @@ fourier( long int noc, int loc_offs )
     int imin, iad;
 
     nod = ceiltopow( noc );
-    rif = log2( nod );
+    rif = ilog2( nod );
 
     if ( nod > cvall ) {
         cvall = nod;

@@ -75,7 +75,7 @@ ceiltopow( long int n )
 }
 
 static __inline__ int
-log2( long int n )
+ilog2( long int n )
 {
     register int j = 0;
     while ( n > 1 ) {

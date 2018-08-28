@@ -80,7 +80,7 @@ void analisi_spettro( int loc_offs ) {
     double soglia, vmax, vmin, x;
 
     nod = ceiltopow( wav_vis.vis_len );
-    rif = log2( nod );
+    rif = ilog2( nod );
 
     if ( fseek( inpf, wav_vis.offset, SEEK_SET ) ) exit(1);
     getone( &vmin );
@@ -101,7 +101,7 @@ void analisi_spettro( int loc_offs ) {
         if ( iflag == 0 ) nnod = nod;
         else {
             nnod = ceiltopow( nod );
-            rif = log2( nnod );
+            rif = ilog2( nnod );
         }
 
         fatt = 1/(double) nnod;
