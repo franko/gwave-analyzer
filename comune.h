@@ -65,7 +65,7 @@ extern int nmax_a, imm_incomp;
 extern FILE *inpf;
 extern double filedur;
 
-extern __inline__ long int
+static __inline__ long int
 ceiltopow( long int n )
 {
     register long int out = 1;
@@ -74,7 +74,7 @@ ceiltopow( long int n )
     return out;
 }
 
-extern __inline__ int
+static __inline__ int
 log2( long int n )
 {
     register int j = 0;
@@ -85,14 +85,14 @@ log2( long int n )
     return j;
 }
  
-extern __inline__ int
+static __inline__ int
 pow2( int n )
 {
     int i=1;
     return i << n;
 }
 
-extern __inline__ void
+static __inline__ void
 *xmalloc( size_t n )
 {
     register void *ret = (void *) malloc( n );
@@ -103,7 +103,7 @@ extern __inline__ void
     return ret;
 }
 
-extern __inline__ void
+static __inline__ void
 *xrealloc( void *pt, size_t n )
 {
     register void *ret = (void *) realloc( pt, n );

@@ -26,54 +26,6 @@ in_alloca() {
     ev_list.alloc = 30;
     ev_list.begin = (event_t *) xmalloc( ev_list.alloc * sizeof(event_t) );
 }
-
-long int
-ceiltopow( long int n )
-{
-    register long int out = 1;
-    while ( out < n )
-        out = out << 1;
-    return out;
-}
-
-int
-log2( long int n )
-{
-    register int j = 0;
-    while ( n > 1 ) {
-        n = n >> 1;
-        j++;
-    }
-    return j;
-}
- 
-int pow2(int n)
-{
-    int i=1;
-    return i << n;
-}
-
-void *
-xmalloc( size_t n )
-{
-    register void *ret = (void *) malloc( n );
-    if ( ! ret ) {
-        fprintf( stderr, "Errore nell'allocare memoria\n" );
-        exit(1);
-    }
-    return ret;
-}
-
-void *
-xrealloc( void *pt, size_t n )
-{
-    register void *ret = (void *) realloc( pt, n );
-    if ( ! ret ) {
-        fprintf( stderr, "Errore nell'allocare memoria\n" );
-        exit(1);
-    }
-    return ret;
-}
          
 int
 getone( double *num ) {
