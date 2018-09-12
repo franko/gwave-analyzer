@@ -1,5 +1,4 @@
 #include <string.h>
-#include <gtk/gtk.h>
 #include "comune.h"
 
 double corr_arm;
@@ -112,11 +111,7 @@ int write_midi() {
     fprintf( text_f, "FINE\n" );
     fclose( text_f );
 
-#if 1
-    g_message( "\nThe melodic analisys has been successfully executed.\nThe result is written in the file melody.mid" );
-#else
-    g_message( "\nL'analisi melodica del file e' stata eseguita con successo.\nLa melodia si trova scritta nel file prova.mid" );
-#endif
+    fprintf(stdout, "\nThe melodic analisys has been successfully executed.\nThe result is written in the file melody.mid");
     return 0;
 }
 

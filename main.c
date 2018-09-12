@@ -108,6 +108,13 @@ static void analyze_wav_header() {
         }
 }
 
+static void wav_to_midi() {
+    int status = wtm_true_timeout(1);
+    while (status >= 0) {
+        status = wtm_true_timeout(0);
+    }
+}
+
 int main (int argc, char *argv[]) {
     int ce, i, j, ce_file = 0;
 
@@ -157,5 +164,9 @@ int main (int argc, char *argv[]) {
     }
 
     analyze_wav_header();
+
+    if (ce_file) {
+        wav_to_midi();
+    }
     return 0;
 }

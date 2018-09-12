@@ -4,7 +4,7 @@ DFL = -g
 CFLAGS = $(OFL) -Wall
 LIB = -lm
 
-OBJ = comune.o main.o # gtkanalisi.o fourier.o wtm.o
+OBJ = comune.o main.o wtm.o # gtkanalisi.o fourier.o
 
 all: gwave
 
@@ -20,8 +20,8 @@ comune.o: comune.c comune.h
 # fourier.o: fourier.c comune.h gtkcomune.h
 # 	$(CC) $(CFLAGS) $(XINC) $(GTKINC) -c fourier.c
 
-# wtm.o: wtm.c comune.h
-# 	$(CC) $(CFLAGS) $(GTKINC) -c wtm.c
+wtm.o: wtm.c comune.h
+	$(CC) $(CFLAGS) -c wtm.c
 
 clean:
 	rm *.o
