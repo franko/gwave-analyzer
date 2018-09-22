@@ -5,6 +5,8 @@
 
 #include "comune.h"
 
+extern long int wtm_true_timeout( );
+
 #define NOPZ 3
 #define NOPZS 1
 static char *wav_head_1 = "RIFF", *wav_head_2 = "WAVEfmt ";

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <alloca.h>
 #include "comune.h"
 #include "string.h"
 
@@ -426,7 +427,7 @@ trova_pic( char *puro, unsigned int nod, double soglia, double *pintens )
         i += j-1;
         if ( cv[ nmax[nm] - 1 ] < pmax  && cv[ nmax[nm] + 1 ] < pmax ) nm++;
     } while ( i < nod/2 - 1 );
-    *pintens *= 2; // Moltiplico per due perchè la procedura analizza mezzo spettro
+    *pintens *= 2; // Moltiplico per due perchï¿½ la procedura analizza mezzo spettro
     return nm;
 }
 
