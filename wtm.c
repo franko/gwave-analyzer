@@ -1,5 +1,6 @@
 #include <string.h>
-#include "comune.h"
+#include "wav_reader.h"
+#include "fourier.h"
 
 double corr_arm;
 
@@ -33,10 +34,6 @@ int mididur( int dur, FILE *loutf ) {
     return j+1;
 } 
 
-inline double camp2time( long int ncam ) {
-    return ncam/(double)wav_spec.freq;
-}
-
 int freq2nota( double fr ) {
     int nota;
     nota = (int) rint( 12*( LOG2D( fr ) - 8.2 ) + corr_arm + 62 );
@@ -44,9 +41,9 @@ int freq2nota( double fr ) {
     return nota;
 }
 
-int camp2dur( long int ncam ) {
+int camp2dur(long int ncam, double frequency) {
     int dur;
-    dur = ( 200*ncam )/(double)wav_spec.freq;
+    dur = ( 200*ncam ) / frequency;
     // dur = 15*(dur/15);
     //  if ( dur < 5 ) dur = 0;  Punto critico
     return dur;
@@ -115,8 +112,7 @@ int write_midi() {
     return 0;
 }
 
-long int
-wtm_true_timeout( char first_time ) {
+long int wav_to_midi_stepping(wav_reader_t *wav, char first_time) {
     static long int nn, ii, jj;
     static int trovata, pausa, offs;
     static int o_nota;
@@ -125,14 +121,15 @@ wtm_true_timeout( char first_time ) {
     static int lnod, nota;
     static char puro, nullo;
     static event_t eva;
+    const int wav_frequency = wav->spec.freq;
 
     if ( first_time ) {
         int tmp;
-        if ( ! inpf ) return -1;
+        if (!wav->file) return -1;
         if ( ! ( outf = fopen( "melody.mid", "w" ) ) ) return -1;
 
-        defnod = ceiltopow( ( 2048 / (double)44100.0 )* wav_spec.freq );
-        tmp = ( 512  / (double)44100.0 )* wav_spec.freq;
+        defnod = ceiltopow( ( 2048 / (double)44100.0 )* wav_frequency );
+        tmp = ( 512  / (double)44100.0 )* wav_frequency;
         minnod = ceiltopow( tmp );
         if ( minnod > tmp && minnod >= 2 )
             minnod /= 2;
@@ -154,7 +151,7 @@ wtm_true_timeout( char first_time ) {
     else {
         lnod = defnod;
         while ( lnod >= minnod ) {
-            fr = detfreq( lnod, &puro, &nullo, &chiq, &intens, offs );
+            fr = detfreq(wav, lnod, &puro, &nullo, &chiq, &intens, offs);
             if ( ( eoinpf = ( fr <= 0 ) ) ) break;
             nullo = nullo || (intens/(double)lnod) < 0.0001; // Punto critico
             puro = puro && chiq <= 1 && chiq >= 0;
@@ -206,8 +203,8 @@ wtm_true_timeout( char first_time ) {
     anal_fatt = 1;
 
     eva.nota = o_nota;
-    eva.pd = camp2dur( ii );
-    eva.nd = camp2dur( jj );
+    eva.pd = camp2dur(ii, wav_frequency);
+    eva.nd = camp2dur(jj, wav_frequency);
 
     if ( eva.nd < 5 ) {
         eva.pd += eva.nd;

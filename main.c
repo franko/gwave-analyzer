@@ -4,12 +4,12 @@
 #include <string.h>
 
 #include "comune.h"
+#include "wav_reader.h"
 
-extern long int wtm_true_timeout( );
+extern long int wav_to_midi_stepping(wav_reader_t *wav, char first_time);
 
 #define NOPZ 3
 #define NOPZS 1
-static char *wav_head_1 = "RIFF", *wav_head_2 = "WAVEfmt ";
 static char *opz[NOPZ] = { "--offs", "-c", "--corr-arm" };
 static char *opzs[NOPZS] = { "--dummy" };
 
@@ -32,88 +32,10 @@ static void strip_filename() {
     stripped_filename = pt;
 }
 
-static void det_file_durata() {
-    if (inpf) {
-        fseek(inpf, 0, SEEK_END);
-        wav_spec.num_sample = (ftell(inpf) - WHEAD) / wav_spec.lun_sample;
-
-        if (wav_spec.num_sample < 0) {
-            wav_spec.num_sample = 0;
-        }
-
-        imm_incomp = ( wav_spec.num_sample < wav_vis.vis_len );
-    }
-}
-
-static void analyze_wav_header() {
-    int wavefile, len;
-    char head[WHEAD+2];
-    if ( ! inpf )
-        {
-            strcpy( status_msg, "No file selected." );
-            return;
-        }
-
-    wavefile = (fseek( inpf, 0, SEEK_SET ) == 0);
-
-    if ( ! wavefile )
-        goto alarm;
-
-    wavefile = ( fread( head, 1, WHEAD+2, inpf ) == WHEAD+2 );
-    if ( ! wavefile )
-        goto alarm;
-    wavefile = ( strncmp( head, wav_head_1, 4 ) == 0 );
-    wavefile = wavefile && ( strncmp( head + 8, wav_head_2, 4 ) == 0 );
-
- alarm:
-    if ( ! wavefile )
-        {
-            strcpy( status_msg,
-                            "The file selected seems to be not a RIFF wav file." );
-            wav_spec.num_sample = 0;
-            return;
-        }
-
-    wav_spec.freq = (int) ( head[24] + 256*(unsigned char) head[25] );
-
-    wav_spec.lun_word = head[34] / 8;
-
-    if ( head[32] / wav_spec.lun_word == 2 )
-        wav_spec.num_can = 2;
-    else
-        {
-            wav_spec.num_can = 1;
-            wav_vis.canal_method = 1;
-        }
-    wav_spec.lun_sample = wav_spec.lun_word * wav_spec.num_can;
-
-    strip_filename();
-
-    det_file_durata();
-
-    len = *(int *) &( head[40] );
-    len /= wav_spec.lun_sample;
-
-    snprintf(status_msg, STR_LEN,
-                "File %s, Sample Freq. %i, Channel num. %i, byte/sample %i, Sample number %i",
-                stripped_filename, wav_spec.freq, wav_spec.num_can,
-                wav_spec.lun_word, wav_spec.num_sample);
-
-    if ( len != wav_spec.num_sample )
-        {
-            const char *msg1 = ", bad file";
-            const int len_1 = strlen( status_msg ) + strlen( msg1 ) - STR_LEN;
-            if ( len_1 <= 0 )
-                strcat( status_msg, msg1 );
-            else
-                strncat( status_msg, msg1, strlen( msg1 ) - len_1 );
-        }
-}
-
-static void wav_to_midi() {
-    int status = wtm_true_timeout(1);
+static void wav_to_midi(wav_reader_t *wav) {
+    int status = wav_to_midi_stepping(wav, 1);
     while (status >= 0) {
-        status = wtm_true_timeout(0);
+        status = wav_to_midi_stepping(wav, 0);
     }
 }
 
@@ -122,8 +44,10 @@ int main (int argc, char *argv[]) {
 
     in_alloca();
 
-    corr_arm = 0;
+    wav_reader_t wav[1];
+    wav_reader_set_zero(wav);
 
+    corr_arm = 0;
     if (argc > 1) {
         for (i = 1; i < argc; i++) {
             for (j = 0; j < NOPZ; j++) {
@@ -135,7 +59,7 @@ int main (int argc, char *argv[]) {
                     wav_vis.offset = atoi(argv[i + 1]);
                     break;
                 case 1:
-                    wav_vis.canal_method = atoi(argv[i + 1]);
+                    wav->canal_method = atoi(argv[i + 1]);
                     break;
                 case 2:
                     corr_arm = strtod(argv[i+1], NULL);
@@ -160,15 +84,21 @@ int main (int argc, char *argv[]) {
     }
 
     if (ce_file) {
-        inpf = fopen( filename, "r" );
+        wav->file = fopen( filename, "r" );
     } else {
-        inpf = (FILE *) NULL;
+        wav->file = (FILE *) NULL;
     }
 
-    analyze_wav_header();
+    strip_filename();
+    wav_reader_init(wav, stripped_filename, status_msg, STR_LEN);
+
+    if (wav->canal_method > wav->spec.num_can) {
+        wav->canal_method = 1;
+    }
+    imm_incomp = (wav->spec.num_sample < wav_vis.vis_len);
 
     if (ce_file) {
-        wav_to_midi();
+        wav_to_midi(wav);
     }
     return 0;
 }
