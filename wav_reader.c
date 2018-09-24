@@ -48,7 +48,7 @@ int wav_reader_init(wav_reader_t *wav, const char *filename) {
         return WAV_READER_NO_FILE;
     }
 
-    int wavefile = (wav_reader_seek(wav, 0) == 0);
+    int wavefile = (fseek(wav->file, 0, SEEK_SET) == 0);
 
     if (!wavefile)
         goto alarm;
