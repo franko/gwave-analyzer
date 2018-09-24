@@ -1,5 +1,3 @@
-#include <alloca.h>
-
 #include "fourier.h"
 
 int fourier(wav_reader_t *wav, long int noc, int loc_offs) {
@@ -164,7 +162,7 @@ static double ver_armonia(unsigned int *nmax, int nm, double *prob_fund, double 
     unsigned int *nmaxpp;
 #endif
 
-    nmaxpp = (unsigned int *) alloca( nm*sizeof(int) );
+    nmaxpp = (unsigned int *) xmalloc(nm * sizeof(int));
 
     for ( i=0; i<nm; i++ )
         if ( cv[ nmax[i] ] > max ) max = cv[ nmax[i] ];
@@ -229,6 +227,8 @@ static double ver_armonia(unsigned int *nmax, int nm, double *prob_fund, double 
 
     if ( bchiq >= 0 )
         *prob_fund = best_fund;
+
+    free(nmaxpp);
 
     return bchiq;
 
