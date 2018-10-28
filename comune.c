@@ -72,6 +72,8 @@ getdata( double *dat, long int loc_offs, long int *noc, int ascomp )
     long int j = 0;
     double x;
 
+    fprintf(stderr, "getdata  %ld-%ld\n", loc_offs, loc_offs + *noc);
+
     if ( ascomp ) f = 2;
 
     if ( fseek( inpf, TO_BYTE( loc_offs ), SEEK_SET ) ) exit(0);
@@ -453,6 +455,8 @@ detfreq( long int nod, char *puro, char *nullo, double *chiq, double *pintens,
         if ( x > vmax ) vmax = x;
         if ( x < vmin ) vmin = x;
     }
+
+    fprintf(stderr, "getdata* %ld-%ld\n", (long int) loc_offs, loc_offs + nod);
 
     *nullo = ( ( vmax - vmin ) < MAXAMPTOL ); /* Punto critico */
     if ( *nullo ) return 1;
