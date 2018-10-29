@@ -1,5 +1,7 @@
 #include <assert.h>
+#ifndef WIN32
 #include <alloca.h>
+#endif
 #include "comune.h"
 #include "string.h"
 
