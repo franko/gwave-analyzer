@@ -71,6 +71,7 @@ static void analyze_wav_header() {
             strcpy( status_msg,
                             "The file selected seems to be not a RIFF wav file." );
             wav_spec.num_sample = 0;
+            fprintf(stderr, "wav header: invalid file\n");
             return;
         }
 
@@ -98,6 +99,8 @@ static void analyze_wav_header() {
                 "File %s, Sample Freq. %i, Channel num. %i, byte/sample %i, Sample number %i",
                 stripped_filename, wav_spec.freq, wav_spec.num_can,
                 wav_spec.lun_word, wav_spec.num_sample);
+
+    fprintf(stderr, "wav header freq: %d channels: %i bps: %d samples: %d\n", wav_spec.freq, wav_spec.num_can, wav_spec.lun_word, wav_spec.num_sample);
 
     if ( len != wav_spec.num_sample )
         {

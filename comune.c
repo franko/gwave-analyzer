@@ -470,6 +470,7 @@ detfreq( long int nod, char *puro, char *nullo, double *chiq, double *pintens,
     for ( i=1; i<nod; i++ ) {
         if ( getone( &x ) )
             {
+                fprintf(stderr, "data end at sample: %d\n", i);
                 *nullo = 1;
                 return (double)-1;
             }
@@ -477,7 +478,7 @@ detfreq( long int nod, char *puro, char *nullo, double *chiq, double *pintens,
         if ( x < vmin ) vmin = x;
     }
 
-    fprintf(stderr, "getdata* %ld-%ld\n", (long int) loc_offs, loc_offs + nod);
+    fprintf(stderr, "look amp %ld-%ld\n", (long int) loc_offs, loc_offs + nod);
 
     *nullo = ( ( vmax - vmin ) < MAXAMPTOL ); /* Punto critico */
     if ( *nullo ) return 1;
