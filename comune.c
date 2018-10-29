@@ -95,6 +95,8 @@ fourier( long int noc, int loc_offs )
     double ya, yb, ir, passo;
     int imin, iad;
 
+    fprintf(stderr, "fourier transform begin\n");
+
     nod = ceiltopow( noc );
     rif = ilog2( nod );
 
@@ -128,6 +130,8 @@ fourier( long int noc, int loc_offs )
             i++;
             ir += passo;
         } while ( i < nod );
+
+        fprintf(stderr, "getdata* %ld-%ld\n", (long int) loc_offs, (long int) (loc_offs + nod));
     }
     
     j= 1;
@@ -173,6 +177,9 @@ fourier( long int noc, int loc_offs )
             }
         }
     }
+
+    fprintf(stderr, "fourier transform end\n");
+
     return 0;
 }
 
@@ -389,6 +396,9 @@ double ver_armonia( unsigned int *nmax, int nm, double *prob_fund,
 #endif
 }
 
+/* [OCT-2018] Based on my partial understanding. This procedure looks at the
+   Fourier transform's coefficients "cv" and looks for the maxima storing
+   details in "nmax" and "pintens" and returns the number of maxima found. */
 int
 trova_pic( char *puro, unsigned int nod, double soglia, double *pintens )
 {
@@ -430,6 +440,13 @@ trova_pic( char *puro, unsigned int nod, double soglia, double *pintens )
         if ( cv[ nmax[nm] - 1 ] < pmax  && cv[ nmax[nm] + 1 ] < pmax ) nm++;
     } while ( i < nod/2 - 1 );
     *pintens *= 2; // Moltiplico per due perch� la procedura analizza mezzo spettro
+
+    fprintf(stderr, "trova_pic intens: %g n.max: %d ", *pintens, nm);
+    for (int q = 0; q < nm; q++) {
+        fprintf(stderr, " %d", nmax[q]);
+    }
+    fprintf(stderr, "\n");
+
     return nm;
 }
 
