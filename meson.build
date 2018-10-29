@@ -1,5 +1,9 @@
 project('gwave-analyzer', 'c', version: '0.1.0', default_options : ['c_std=gnu99'])
 
+if host_machine.system() == 'windows'
+    add_global_arguments('-DWIN32', language : 'c')
+endif
+
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
 

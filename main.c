@@ -23,6 +23,14 @@ char *note_lett[] = { "Do", "Re", "Mi", "Fa", "Sol", "La", "Si" };
 int imm_incomp;
 double corr_arm;
 
+static FILE *fopen_binary_read(const char *filename) {
+#ifdef WIN32
+    return fopen(filename, "rb");
+#else
+    return fopen(filename, "r");
+#endif
+}
+
 static void strip_filename() {
     char *pt = strchr(filename, 0);
     while ( pt > filename && *pt != '/' ) {
@@ -163,7 +171,7 @@ int main (int argc, char *argv[]) {
     }
 
     if (ce_file) {
-        inpf = fopen( filename, "r" );
+        inpf = fopen_binary_read(filename);
     } else {
         inpf = (FILE *) NULL;
     }
