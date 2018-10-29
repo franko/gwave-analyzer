@@ -86,6 +86,8 @@ getdata( double *dat, long int loc_offs, long int *noc, int ascomp )
     if ( j < *noc ) *noc = j;
 }
 
+/* [OCT-2018] Read "noc" samples from wav file starting from "loc_offs"
+   and compute the Fourier transform in the global array "cv". */
 int
 fourier( long int noc, int loc_offs )
 {
@@ -460,6 +462,8 @@ detfreq( long int nod, char *puro, char *nullo, double *chiq, double *pintens,
     int iflag, nm;
     long double fr = 0;
 
+    /* [OCT-2018] lookup the next "nod" samples starting from "loc_offs" to find
+       maximum and minimum amplitudes. */
     if ( fseek( inpf, TO_BYTE( loc_offs ), SEEK_SET ) ) exit(1);
     getone( &vmin );
     vmax = vmin;
