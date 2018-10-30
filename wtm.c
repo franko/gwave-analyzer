@@ -164,7 +164,7 @@ wtm_true_timeout( char first_time ) {
         }
         if ( eoinpf ) goto as_break;
         if (!nullo) {
-            fprintf(stderr, "detfreq frequency: %g\n", fr);
+            fprintf(stderr, "detfreq frequency: %g\n\n", fr);
         }
         if ( lnod < minnod ) lnod = minnod;
         offs += lnod;

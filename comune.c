@@ -119,6 +119,7 @@ fourier( long int noc, int loc_offs )
         if ( fseek( inpf, TO_BYTE( loc_offs ), SEEK_SET ) ) exit(0);
         getone( &ya );
         getone( &yb );
+        int samples_used = 2;
         i = 0;
         iad = 1;
         do {
@@ -126,6 +127,7 @@ fourier( long int noc, int loc_offs )
             if ( imin >= iad ) {
                 ya = yb;
                 getone( &yb );
+                samples_used++;
                 iad++;
             }
             cv[ 2*i+1 ] = 0;
@@ -135,7 +137,7 @@ fourier( long int noc, int loc_offs )
             ir += passo;
         } while ( i < nod );
 
-        fprintf(stderr, "getdata* %ld-%ld\n", (long int) loc_offs, (long int) (loc_offs + nod));
+        fprintf(stderr, "getdata* %d-%d\n", loc_offs, loc_offs + samples_used);
     }
     
     j= 1;
@@ -452,7 +454,7 @@ trova_pic( char *puro, unsigned int nod, double soglia, double *pintens )
         i += j-1;
         if ( cv[ nmax[nm] - 1 ] < pmax  && cv[ nmax[nm] + 1 ] < pmax ) nm++;
     } while ( i < nod/2 - 1 );
-    *pintens *= 2; // Moltiplico per due perch� la procedura analizza mezzo spettro
+    *pintens *= 2; /* Multiplies by two because procedure analyzes only half of the spectrum. */
 
     fprintf(stderr, "trova_pic pure: %d intens: %g n.max: %d ", *puro, *pintens, nm);
     for (int q = 0; q < nm; q++) {
@@ -494,6 +496,9 @@ detfreq( long int nod, char *puro, char *nullo, double *chiq, double *pintens,
     *nullo = ( ( vmax - vmin ) < MAXAMPTOL ); /* Punto critico */
     if ( *nullo ) return 1;
     
+    /* [OCT-2018] The second pass with iflag = 1 is used to improve focus of the fourier
+       transform by removing samples that make signal non-periodic for the fundamental harmonic
+       frequency. */
     for ( iflag=0; iflag<2; iflag++ ) {
 
         fourier( nod, loc_offs );
@@ -504,11 +509,11 @@ detfreq( long int nod, char *puro, char *nullo, double *chiq, double *pintens,
             nnod = ceiltopow( nod );
 
         fatt = 1/(double) nnod;
-        for ( i=1; i < nnod/2; i++ ) { // parte da 1 per escludere la continua
+        for ( i=1; i < nnod/2; i++ ) { /* Start from one to exclude zero-frequency term. */
             cv[ i ] = fatt*( cv[ 2*i ]*cv[ 2*i ] + cv[ 2*i+1 ]*cv[ 2*i+1 ] );
             soglia += cv[ i ];
         }
-        cv[0] = 0; // comp. continua
+        cv[0] = 0; /* Zero frequency term. */
         soglia *= rejfac;
 
         nm = trova_pic( puro, nnod, soglia, pintens );
@@ -529,7 +534,11 @@ detfreq( long int nod, char *puro, char *nullo, double *chiq, double *pintens,
             fprintf(stderr, "[%d] fundamental frequency : %g\n", iflag + 1, fr);
         }
 
-        if ( iflag == 0 ) nod -= elim_spurii( fr, nod, loc_offs );
+        if ( iflag == 0 ) {
+            int remove_samples = elim_spurii( fr, nod, loc_offs );
+            nod -= remove_samples;
+            fprintf(stderr, "remove samples: %d\n", remove_samples);
+        }
 
         if ( nod < 8 ) break;
     }
