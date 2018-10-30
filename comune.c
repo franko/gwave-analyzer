@@ -196,6 +196,10 @@ void nome_nota( int nota, char *str ) {
     if ( rim ) strcat( str, "#" );
 }
 
+/* [OCT-2018] Figure out of many samples to remove from the end, starting
+   from loc_offs up to nod samples. The samples to remove are chosen so the
+   signal is terminated with periodic conditions. Returns the number of
+   samples to remove. */
 unsigned int
 elim_spurii( double frfond, long int nod, int loc_offs )
 {
@@ -259,6 +263,9 @@ elim_spurii( double frfond, long int nod, int loc_offs )
 #endif
 }
 
+/* [OCT-2018] Try to figure out the frequency of the fundamental harmonic
+   and write its frequency in "prob_fund" if one is found. Return a
+   sort of quality indicator, if < 0 no good frequency was found. */
 double ver_armonia( unsigned int *nmax, int nm, double *prob_fund,
                 	    double fatt_ra )
 {
@@ -402,7 +409,9 @@ double ver_armonia( unsigned int *nmax, int nm, double *prob_fund,
 
 /* [OCT-2018] Based on my partial understanding. This procedure looks at the
    Fourier transform's coefficients "cv" and looks for the maxima storing
-   details in "nmax" and "pintens" and returns the number of maxima found. */
+   details in "nmax" and "pintens" and returns the number of maxima found.
+   Write also the boolean variable "puro" that should be related to purity
+   of the signal. */
 int
 trova_pic( char *puro, unsigned int nod, double soglia, double *pintens )
 {
@@ -445,7 +454,7 @@ trova_pic( char *puro, unsigned int nod, double soglia, double *pintens )
     } while ( i < nod/2 - 1 );
     *pintens *= 2; // Moltiplico per due perch� la procedura analizza mezzo spettro
 
-    fprintf(stderr, "trova_pic intens: %g n.max: %d ", *pintens, nm);
+    fprintf(stderr, "trova_pic pure: %d intens: %g n.max: %d ", *puro, *pintens, nm);
     for (int q = 0; q < nm; q++) {
         fprintf(stderr, " %d", nmax[q]);
     }
@@ -462,7 +471,7 @@ detfreq( long int nod, char *puro, char *nullo, double *chiq, double *pintens,
     double vmin, vmax, fatt, x, vf;
     double soglia = 0, rejfac = 0.003;
     int iflag, nm;
-    long double fr = 0;
+    double fr = 0;
 
     /* [OCT-2018] lookup the next "nod" samples starting from "loc_offs" to find
        maximum and minimum amplitudes. */
@@ -511,10 +520,14 @@ detfreq( long int nod, char *puro, char *nullo, double *chiq, double *pintens,
         else
             *chiq = ver_armonia( nmax, nm, &vf, 0.0 ); // Punto critico
 
-        if ( *chiq < 0 )
+        if ( *chiq < 0 ) {
             fr = nmax[0]*((double)wav_spec.freq/nod);
-        else
+            fprintf(stderr, "[%d] fundamental frequency*: %g\n", iflag + 1, fr);
+        }
+        else {
             fr = vf*((double)wav_spec.freq/nod); // Punto critico
+            fprintf(stderr, "[%d] fundamental frequency : %g\n", iflag + 1, fr);
+        }
 
         if ( iflag == 0 ) nod -= elim_spurii( fr, nod, loc_offs );
 

@@ -207,8 +207,6 @@ wtm_true_timeout( char first_time ) {
     return offs;
 
 as_break:
-    fprintf(stderr, "end of wave file\n");
-
     anal_fatt = 1;
 
     eva.nota = o_nota;
