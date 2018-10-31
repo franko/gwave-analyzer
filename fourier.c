@@ -180,7 +180,7 @@ static double ver_armonia(unsigned int *nmax, int nm, double *prob_fund, double 
     unsigned int *nmaxpp;
 #endif
 
-    nmaxpp = (unsigned int *) xmalloc(nm * sizeof(int));
+    nmaxpp = (unsigned int *) xmalloc((nm + 1) * sizeof(int));
 
     for ( i=0; i<nm; i++ )
         if ( cv[ nmax[i] ] > max ) max = cv[ nmax[i] ];
