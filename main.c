@@ -14,8 +14,6 @@ static char *opz[NOPZ] = { "--offs", "-c", "--corr-arm" };
 static char *opzs[NOPZS] = { "--dummy" };
 
 #define STR_LEN 160
-char status_msg[ STR_LEN + 1 ] = "";
-
 char *stripped_filename;
 char filename[ STR_LEN + 1 ] = "";
 
@@ -98,7 +96,11 @@ int main (int argc, char *argv[]) {
     }
 
     strip_filename();
-    wav_reader_init(wav, stripped_filename, status_msg, STR_LEN);
+    int wav_read_status = wav_reader_init(wav, stripped_filename);
+    if (wav_read_status != WAV_READER_SUCCESS) {
+        fprintf(stderr, "Error reading wav file %s. Error code: %d.\n", filename, wav_read_status);
+        return 1;
+    }
 
     if (wav->canal_method > wav->spec.num_can) {
         wav->canal_method = 1;

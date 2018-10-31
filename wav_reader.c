@@ -2,6 +2,7 @@
 #include <string.h>
 #include <assert.h>
 
+#include "debug_log.h"
 #include "wav_reader.h"
 
 #define WHEAD 44
@@ -40,12 +41,11 @@ void wav_reader_set_zero(wav_reader_t *wav) {
     wav->canal_method = 1;
 }
 
-void wav_reader_init(wav_reader_t *wav, const char *filename, char status_message[], const int status_message_len) {
+int wav_reader_init(wav_reader_t *wav, const char *filename) {
     int len;
     char head[WHEAD+2];
     if (!wav->file) {
-        strcpy(status_message, "No file selected.");
-        return;
+        return WAV_READER_NO_FILE;
     }
 
     int wavefile = (fseek(wav->file, 0, SEEK_SET) == 0);
@@ -61,10 +61,9 @@ void wav_reader_init(wav_reader_t *wav, const char *filename, char status_messag
 
  alarm:
     if (!wavefile) {
-        strcpy(status_message, "The file selected seems to be not a RIFF wav file.");
         wav->spec.num_sample = 0;
         fprintf(stderr, "wav header: invalid file\n");
-        return;
+        return WAV_READER_UNKNOWN_FORMAT;
     }
 
     wav->spec.freq = (int) ( head[24] + 256*(unsigned char) head[25] );
@@ -83,21 +82,17 @@ void wav_reader_init(wav_reader_t *wav, const char *filename, char status_messag
     len = *(int *) &( head[40] );
     len /= wav->spec.lun_sample;
 
-    snprintf(status_message, status_message_len,
-                "File %s, Sample Freq. %i, Channel num. %i, byte/sample %i, Sample number %i",
+    debug_log("File %s, Sample Freq. %i, Channel num. %i, byte/sample %i, Sample number %i",
                 filename, wav->spec.freq, wav->spec.num_can,
                 wav->spec.lun_word, wav->spec.num_sample);
 
+    if (len > wav->spec.num_sample) {
+        return WAV_READER_ILL_FORMED;
+    }
+
     fprintf(stderr, "wav header freq: %d channels: %i bps: %d samples: %d\n", wav->spec.freq, wav->spec.num_can, wav->spec.lun_word, wav->spec.num_sample);
 
-    if (len != wav->spec.num_sample) {
-        const char *msg1 = ", bad file";
-        const int len_1 = strlen(status_message) + strlen(msg1) - status_message_len;
-        if ( len_1 <= 0 )
-            strcat(status_message, msg1);
-        else
-            strncat(status_message, msg1, strlen(msg1) - len_1);
-    }
+    return WAV_READER_SUCCESS;
 }
 
 int getone(wav_reader_t *wav, double *num) {
