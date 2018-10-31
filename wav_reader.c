@@ -63,6 +63,7 @@ void wav_reader_init(wav_reader_t *wav, const char *filename, char status_messag
     if (!wavefile) {
         strcpy(status_message, "The file selected seems to be not a RIFF wav file.");
         wav->spec.num_sample = 0;
+        fprintf(stderr, "wav header: invalid file\n");
         return;
     }
 
@@ -86,6 +87,8 @@ void wav_reader_init(wav_reader_t *wav, const char *filename, char status_messag
                 "File %s, Sample Freq. %i, Channel num. %i, byte/sample %i, Sample number %i",
                 filename, wav->spec.freq, wav->spec.num_can,
                 wav->spec.lun_word, wav->spec.num_sample);
+
+    fprintf(stderr, "wav header freq: %d channels: %i bps: %d samples: %d\n", wav->spec.freq, wav->spec.num_can, wav->spec.lun_word, wav->spec.num_sample);
 
     if (len != wav->spec.num_sample) {
         const char *msg1 = ", bad file";
@@ -137,6 +140,8 @@ void getdata(wav_reader_t *wav, double *dat, long int loc_offs, long int *noc, i
     int f = 1;
     long int j = 0;
     double x;
+
+    fprintf(stderr, "getdata  %ld-%ld\n", loc_offs, loc_offs + *noc);
 
     if ( ascomp ) f = 2;
 

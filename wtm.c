@@ -108,7 +108,7 @@ int write_midi() {
     fprintf( text_f, "FINE\n" );
     fclose( text_f );
 
-    fprintf(stdout, "\nThe melodic analisys has been successfully executed.\nThe result is written in the file melody.mid");
+    fprintf(stdout, "\nThe melodic analisys has been successfully executed.\nThe result is written in the file melody.mid\n");
     return 0;
 }
 
@@ -155,10 +155,14 @@ long int wav_to_midi_stepping(wav_reader_t *wav, char first_time) {
             if ( ( eoinpf = ( fr <= 0 ) ) ) break;
             nullo = nullo || (intens/(double)lnod) < 0.0001; // Punto critico
             puro = puro && chiq <= 1 && chiq >= 0;
+            fprintf(stderr, "detfreq nullo: %3s puro: %3s\n", nullo ? "yes" : "no", puro ? "yes" : "no");
             if ( nullo || puro ) break;
             lnod /= 2;
         }
         if ( eoinpf ) goto as_break;
+        if (!nullo) {
+            fprintf(stderr, "detfreq frequency: %g\n\n", fr);
+        }
         if ( lnod < minnod ) lnod = minnod;
         offs += lnod;
     }
@@ -199,7 +203,7 @@ long int wav_to_midi_stepping(wav_reader_t *wav, char first_time) {
     }
     return offs;
 
- as_break:
+as_break:
     anal_fatt = 1;
 
     eva.nota = o_nota;

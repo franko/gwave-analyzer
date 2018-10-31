@@ -2,12 +2,16 @@
 
 #include "fourier.h"
 
+/* [OCT-2018] Read "noc" samples from wav file starting from "loc_offs"
+   and compute the Fourier transform in the global array "cv". */
 int fourier(wav_reader_t *wav, long int noc, int loc_offs) {
     unsigned int k, pd, i, j, m, nod;
     double wi, wr, wti, wtr, temi, temr;
     int rif;
     double ya, yb, ir, passo;
     int imin, iad;
+
+    fprintf(stderr, "fourier transform begin\n");
 
     nod = ceiltopow( noc );
     rif = ilog2( nod );
@@ -27,6 +31,7 @@ int fourier(wav_reader_t *wav, long int noc, int loc_offs) {
         if (wav_reader_seek(wav, loc_offs)) exit(0);
         getone(wav, &ya);
         getone(wav, &yb);
+        int samples_used = 2;
         i = 0;
         iad = 1;
         do {
@@ -34,6 +39,7 @@ int fourier(wav_reader_t *wav, long int noc, int loc_offs) {
             if ( imin >= iad ) {
                 ya = yb;
                 getone(wav, &yb);
+                samples_used++;
                 iad++;
             }
             cv[ 2*i+1 ] = 0;
@@ -42,6 +48,8 @@ int fourier(wav_reader_t *wav, long int noc, int loc_offs) {
             i++;
             ir += passo;
         } while ( i < nod );
+
+        fprintf(stderr, "getdata* %d-%d\n", loc_offs, loc_offs + samples_used);
     }
 
     j= 1;
@@ -87,9 +95,16 @@ int fourier(wav_reader_t *wav, long int noc, int loc_offs) {
             }
         }
     }
+
+    fprintf(stderr, "fourier transform end\n");
+ 
     return 0;
 }
 
+/* [OCT-2018] Figure out of many samples to remove from the end, starting
+   from loc_offs up to nod samples. The samples to remove are chosen so the
+   signal is terminated with periodic conditions. Returns the number of
+   samples to remove. */
 static unsigned int elim_spurii(wav_reader_t *wav, double frfond, long int nod, int loc_offs) {
     double mchiq, chiq, fmed, max, min, famp, med, amp;
     int i, j, betoffs = 0;
@@ -151,6 +166,9 @@ static unsigned int elim_spurii(wav_reader_t *wav, double frfond, long int nod, 
 #endif
 }
 
+/* [OCT-2018] Try to figure out the frequency of the fundamental harmonic
+   and write its frequency in "prob_fund" if one is found. Return a
+   sort of quality indicator, if < 0 no good frequency was found. */
 static double ver_armonia(unsigned int *nmax, int nm, double *prob_fund, double fatt_ra) {
 #if 0
     int nfrciu, limfrciu = 4, ibfnd = 0, i_pr_fnd = 0, j, i, nmpp;
@@ -309,6 +327,11 @@ static void peak_ws_free(struct peak_ws *workspace) {
     free(workspace->nmax);
 }
 
+/* [OCT-2018] Based on my partial understanding. This procedure looks at the
+   Fourier transform's coefficients "cv" and looks for the maxima storing
+   details in "nmax" and "pintens" and returns the number of maxima found.
+   Write also the boolean variable "puro" that should be related to purity
+   of the signal. */
 static int trova_pic(struct peak_ws *workspace, char *puro, unsigned int nod, double soglia, double *pintens) {
     int i = 0, j, nm = 0, cond, necc, nmaxecc, tolpur;
     double pmax;
@@ -347,7 +370,15 @@ static int trova_pic(struct peak_ws *workspace, char *puro, unsigned int nod, do
         i += j-1;
         if ( cv[ nmax[nm] - 1 ] < pmax  && cv[ nmax[nm] + 1 ] < pmax ) nm++;
     } while ( i < nod/2 - 1 );
-    *pintens *= 2; // Moltiplico per due perch� la procedura analizza mezzo spettro
+    *pintens *= 2; /* Multiplies by two because procedure analyzes only half of the spectrum. */
+
+    unsigned int *nmax = workspace->nmax;
+    fprintf(stderr, "trova_pic pure: %d intens: %g n.max: %d [", *puro, *pintens, nm);
+    for (int q = 0; q < nm; q++) {
+        fprintf(stderr, " %d", nmax[q]);
+    }
+    fprintf(stderr, "]\n");
+
     return nm;
 }
 
@@ -356,8 +387,10 @@ double detfreq(wav_reader_t *wav, long int nod, char *puro, char *nullo, double 
     double vmin, vmax, fatt, x, vf;
     double soglia = 0, rejfac = 0.003;
     int iflag, nm;
-    long double fr = 0;
+    double fr = 0;
 
+    /* [OCT-2018] lookup the next "nod" samples starting from "loc_offs" to find
+       maximum and minimum amplitudes. */
     if (wav_reader_seek(wav, loc_offs)) exit(1);
 
     getone(wav, &vmin);
@@ -365,12 +398,15 @@ double detfreq(wav_reader_t *wav, long int nod, char *puro, char *nullo, double 
     for ( i=1; i<nod; i++ ) {
         if (getone(wav, &x))
             {
+                fprintf(stderr, "data end at sample: %d\n", i);
                 *nullo = 1;
                 return (double)-1;
             }
         if ( x > vmax ) vmax = x;
         if ( x < vmin ) vmin = x;
     }
+
+    fprintf(stderr, "look amp %ld-%ld\n", (long int) loc_offs, loc_offs + nod);
 
     *nullo = ( ( vmax - vmin ) < MAXAMPTOL ); /* Punto critico */
     if ( *nullo ) return 1;
@@ -380,6 +416,9 @@ double detfreq(wav_reader_t *wav, long int nod, char *puro, char *nullo, double 
     // of this function.
     peak_ws_init(workspace, 20);
 
+    /* [OCT-2018] The second pass with iflag = 1 is used to improve focus of the fourier
+       transform by removing samples that make signal non-periodic for the fundamental harmonic
+       frequency. */
     for ( iflag=0; iflag<2; iflag++ ) {
 
         fourier(wav, nod, loc_offs);
@@ -390,11 +429,11 @@ double detfreq(wav_reader_t *wav, long int nod, char *puro, char *nullo, double 
             nnod = ceiltopow( nod );
 
         fatt = 1/(double) nnod;
-        for ( i=1; i < nnod/2; i++ ) { // parte da 1 per escludere la continua
+        for ( i=1; i < nnod/2; i++ ) { /* Start from one to exclude zero-frequency term. */
             cv[ i ] = fatt*( cv[ 2*i ]*cv[ 2*i ] + cv[ 2*i+1 ]*cv[ 2*i+1 ] );
             soglia += cv[ i ];
         }
-        cv[0] = 0; // comp. continua
+        cv[0] = 0; /* Zero frequency term. */
         soglia *= rejfac;
 
         nm = trova_pic(workspace, puro, nnod, soglia, pintens);
@@ -407,12 +446,18 @@ double detfreq(wav_reader_t *wav, long int nod, char *puro, char *nullo, double 
         else
             *chiq = ver_armonia( nmax, nm, &vf, 0.0 ); // Punto critico
 
-        if ( *chiq < 0 )
+        if ( *chiq < 0 ) {
             fr = nmax[0]*((double)wav->spec.freq/nod);
-        else
+            fprintf(stderr, "[%d] fundamental frequency*: %g\n", iflag + 1, fr);
+        } else {
             fr = vf*((double)wav->spec.freq/nod); // Punto critico
-
-        if ( iflag == 0 ) nod -= elim_spurii(wav, fr, nod, loc_offs);
+            fprintf(stderr, "[%d] fundamental frequency : %g\n", iflag + 1, fr);
+        }
+        if ( iflag == 0 ) {
+            int remove_samples = elim_spurii(wav, fr, nod, loc_offs);
+            nod -= remove_samples;
+            fprintf(stderr, "remove samples: %d\n", remove_samples);
+        }
 
         if ( nod < 8 ) break;
     }
