@@ -1,8 +1,5 @@
 #include <assert.h>
 #include <string.h>
-#ifndef WIN32
-#include <alloca.h>
-#endif
 #include "comune.h"
 #include "wav_reader.h"
 

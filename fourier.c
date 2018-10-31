@@ -1,5 +1,6 @@
+#ifndef WIN32
 #include <alloca.h>
-
+#endif
 #include "fourier.h"
 
 /* [OCT-2018] Read "noc" samples from wav file starting from "loc_offs"
@@ -373,11 +374,11 @@ static int trova_pic(struct peak_ws *workspace, char *puro, unsigned int nod, do
     *pintens *= 2; /* Multiplies by two because procedure analyzes only half of the spectrum. */
 
     unsigned int *nmax = workspace->nmax;
-    fprintf(stderr, "trova_pic pure: %d intens: %g n.max: %d [", *puro, *pintens, nm);
+    fprintf(stderr, "trova_pic pure: %d intens: %g n.max: %d ", *puro, *pintens, nm);
     for (int q = 0; q < nm; q++) {
         fprintf(stderr, " %d", nmax[q]);
     }
-    fprintf(stderr, "]\n");
+    fprintf(stderr, "\n");
 
     return nm;
 }
