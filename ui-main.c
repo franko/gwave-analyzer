@@ -17,8 +17,10 @@ int main() {
     uiInitOptions options;
     memset(&options, 0, sizeof (uiInitOptions));
     const char *err = uiInit(&options);
-    if (err != NULL) {
-        fprintf(stderr, "error initializing libui: %s", err);
+    /* workaround: in libui alpha4.1 Common Controls return an error but with code 0, so there
+       is actually no error. */
+    if (err != NULL && strstr(err, "initializing Common Controls; code 0 ") == NULL) {
+        fprintf(stderr, "%s", err);
         uiFreeInitError(err);
         return 1;
     }
