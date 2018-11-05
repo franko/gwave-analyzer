@@ -7,7 +7,7 @@ endif
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
 
-gwave_src = ['debug_log.c', 'main.c', 'comune.c', 'fourier.c', 'wav_reader.c', 'wtm.c']
+gwave_src = ['debug_log.c', 'main.c', 'fourier.c', 'wav_reader.c', 'wtm.c', 'wav2midi.c']
 
 libui = dependency('libui')
 
@@ -21,4 +21,4 @@ gwave_ui_src = ['ui-main.c', 'dummy.cpp']
 
 executable('gwave-ui', gwave_ui_src,
            include_directories: [], dependencies: [libui, m_dep],
-           gui_app: true)
+           gui_app: false)

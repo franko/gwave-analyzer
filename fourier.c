@@ -1,3 +1,4 @@
+#include "wav2midi_priv.h"
 #include "fourier.h"
 
 /* [OCT-2018] Read "noc" samples from wav file starting from "loc_offs"

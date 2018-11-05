@@ -1,5 +1,5 @@
 #include <string.h>
-#include "wav_reader.h"
+#include "wav2midi_priv.h"
 #include "fourier.h"
 
 double corr_arm;

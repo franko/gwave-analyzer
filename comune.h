@@ -9,48 +9,6 @@
 #define SQR(x) (x)*(x)
 #define LOG2D(x) log(x)/(double)LN2
 
-// Ampiezza massima al di sotto della quale il suono � considerato nullo
-#define MAXAMPTOL 0.05
-
-typedef struct {
-    long int offs_inizio;
-    int durata_nota;
-    int nota; 
-    int pd;
-    int nd;
-} event_t;
-
-typedef struct
-{
-    int offset;
-    int vis_len;
-    double y_magn;
-}
-wav_visual_t;
-
-typedef struct
-{
-    event_t *begin;
-    int number;
-    int alloc;
-}
-event_list_t;
-
-/*  extern long int dur, offs, l_filedur; */
-/*  extern int freq, lunw, lun_sam; */
-/*  extern int stereo; */
-/*  extern int canal_method; */
-extern wav_visual_t wav_vis;
-extern event_list_t ev_list;
-
-extern char *note_lett[];
-extern double corr_arm;
-
-extern double *cv, *fp, *lp;
-extern int cvall, fpall;
-extern int imm_incomp;
-extern double filedur;
-
 static __inline__ long int
 ceiltopow( long int n )
 {
@@ -99,9 +57,3 @@ static __inline__ void
     }
     return ret;
 }
-         
-extern void
-nome_nota( int nota, char *str );
-
-extern void
-in_alloca();
