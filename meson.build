@@ -1,7 +1,9 @@
 project('gwave-analyzer', ['c', 'cpp'], version: '0.1.0', default_options : ['c_std=gnu99'])
 
 if host_machine.system() == 'windows'
+    windows = import('windows')
     add_global_arguments('-DWIN32', language : ['c', 'cpp'])
+    gwave_res = windows.compile_resources('sample.rc')
 endif
 
 cc = meson.get_compiler('c')
@@ -18,6 +20,10 @@ executable('gwave', gwave_src,
 # The dummy.cpp file is there to force the linker to use g++ because
 # libui needs C++ linking.
 gwave_ui_src = ['ui-main.c', 'dummy.cpp']
+
+if host_machine.system() == 'windows'
+    gwave_ui_src += gwave_res
+endif
 
 executable('gwave-ui', gwave_ui_src,
            include_directories: [], dependencies: [libui, m_dep],
