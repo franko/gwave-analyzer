@@ -19,7 +19,7 @@ executable('gwave', gwave_src,
 
 # The dummy.cpp file is there to force the linker to use g++ because
 # libui needs C++ linking.
-gwave_ui_src = ['ui-main.c', 'dummy.cpp']
+gwave_ui_src = ['debug_log.c', 'ui-main.c', 'wav_reader.c', 'dummy.cpp']
 
 if host_machine.system() == 'windows'
     gwave_ui_src += gwave_res

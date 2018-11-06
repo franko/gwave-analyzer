@@ -2,10 +2,25 @@
 #include <string.h>
 #include <ui.h>
 
+#include "wav_reader.h"
+
 // names and values from https://msdn.microsoft.com/en-us/library/windows/desktop/dd370907%28v=vs.85%29.aspx
 #define colorWhite 0xFFFFFF
 #define colorBlack 0x000000
 #define colorDodgerBlue 0x1E90FF
+
+typedef struct {
+    uiAreaHandler handler;
+    wav_reader_t *wav;
+    int show_pixel;
+    int show_sample;
+} wavAreaHandler;
+
+#define wavAreaHandler(a) ((wavAreaHandler *) (a))
+
+int wavAreaHandlerPixelSize(wavAreaHandler *wh) {
+    return wh->wav->spec.num_sample * wh->show_pixel / wh->show_sample;
+}
 
 static int onClosing(uiWindow *w, void *data) {
     uiQuit();
@@ -34,14 +49,33 @@ static void setSolidBrush(uiDrawBrush *brush, uint32_t color, double alpha)
 }
 
 static void handlerDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) {
+    wavAreaHandler *wh = wavAreaHandler(a);
     uiDrawBrush brush;
     setSolidBrush(&brush, colorWhite, 1.0);
 
     uiDrawPath *path = uiDrawNewPath(uiDrawFillModeWinding);
-    uiDrawPathAddRectangle(path, 0, 0, p->AreaWidth, p->AreaHeight);
+    uiDrawPathAddRectangle(path, 0, 0, wavAreaHandlerPixelSize(wh), 400);
     uiDrawPathEnd(path);
     uiDrawFill(p->Context, path, &brush);
     uiDrawFreePath(path);
+#if 0
+    setSolidBrush(&brush, colorDodgerBlue, 1.0);
+    path = uiDrawNewPath(uiDrawFillModeWinding);
+
+    uiDrawPathNewFigure(path, , yoffTop);
+
+    int sample = 0;
+    while (1) {
+        double amp[2];
+        getone(wh->wav, amp);
+        double x = sample * wh->show_pixel / wh->show_sample;
+        double y = amp * 200 + 200;
+        uiDrawPathLineTo(path, x, y);
+    }
+    uiDrawPathEnd(path);
+    uiDrawStroke(p->Context, path, &brush, &sp);
+    uiDrawFreePath(path);
+#endif
 }
 
 static void handlerMouseEvent(uiAreaHandler *a, uiArea *area, uiAreaMouseEvent *e) {
@@ -81,7 +115,31 @@ static int handlerKeyEvent(uiAreaHandler *ah, uiArea *a, uiAreaKeyEvent *e)
     return 0;
 }
 
-int main() {
+static FILE *fopen_binary_read(const char *filename) {
+#ifdef WIN32
+    return fopen(filename, "rb");
+#else
+    return fopen(filename, "r");
+#endif
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "usage: %s <filename>\n", argv[0]);
+        exit(1);
+    }
+
+    wav_reader_t wav[1];
+    wav_reader_set_zero(wav);
+
+    const char *filename = argv[1];
+    wav->file = fopen_binary_read(filename);
+    int wav_read_status = wav_reader_init(wav, filename);
+    if (wav_read_status != WAV_READER_SUCCESS) {
+        fprintf(stderr, "Error reading wav file %s. Error code: %d.\n", filename, wav_read_status);
+        return 1;
+    }
+
     uiInitOptions options;
     memset(&options, 0, sizeof (uiInitOptions));
     const char *err = uiInit(&options);
@@ -131,14 +189,22 @@ int main() {
     // uiRadioButtonsOnSelected(rb, onRBSelected, NULL);
     uiBoxAppend(hbox, uiControl(rb), 0);
 
-    uiAreaHandler wav_display_handler[1];
+    wavAreaHandler wav_handler_ext;
+
+    uiAreaHandler *wav_display_handler = &wav_handler_ext.handler;
     wav_display_handler->Draw = handlerDraw;
     wav_display_handler->MouseEvent = handlerMouseEvent;
     wav_display_handler->MouseCrossed = handlerMouseCrossed;
     wav_display_handler->DragBroken = handlerDragBroken;
     wav_display_handler->KeyEvent = handlerKeyEvent;
 
-    uiArea *wav_display_area = uiNewArea(wav_display_handler);
+    // wav_handler_ext.window_width = 10000;
+    // wav_handler_ext.window_height = 400;
+    wav_handler_ext.wav = wav;
+    wav_handler_ext.show_pixel = 1;
+    wav_handler_ext.show_sample = 1;
+
+    uiArea *wav_display_area = uiNewScrollingArea(wav_display_handler, wavAreaHandlerPixelSize(&wav_handler_ext), 400);
     uiBoxAppend(vbox, uiControl(wav_display_area), 1);
 
     uiControlShow(uiControl(mainwin));
