@@ -9,17 +9,14 @@
 #define colorBlack 0x000000
 #define colorDodgerBlue 0x1E90FF
 
-typedef struct {
-    uiAreaHandler handler;
-    wav_reader_t *wav;
+struct {
+    wav_reader_t wav[1];
     int show_pixel;
     int show_sample;
-} wavAreaHandler;
+} app;
 
-#define wavAreaHandler(a) ((wavAreaHandler *) (a))
-
-int wavAreaHandlerPixelSize(wavAreaHandler *wh) {
-    return wh->wav->spec.num_sample * wh->show_pixel / wh->show_sample;
+int showWavPixelSize() {
+    return app.wav->spec.num_sample * app.show_pixel / app.show_sample;
 }
 
 static int onClosing(uiWindow *w, void *data) {
@@ -49,12 +46,11 @@ static void setSolidBrush(uiDrawBrush *brush, uint32_t color, double alpha)
 }
 
 static void handlerDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) {
-    wavAreaHandler *wh = wavAreaHandler(a);
     uiDrawBrush brush;
     setSolidBrush(&brush, colorWhite, 1.0);
 
     uiDrawPath *path = uiDrawNewPath(uiDrawFillModeWinding);
-    uiDrawPathAddRectangle(path, 0, 0, wavAreaHandlerPixelSize(wh), 400);
+    uiDrawPathAddRectangle(path, 0, 0, showWavPixelSize(), 400);
     uiDrawPathEnd(path);
     uiDrawFill(p->Context, path, &brush);
     uiDrawFreePath(path);
@@ -129,12 +125,11 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    wav_reader_t wav[1];
-    wav_reader_set_zero(wav);
+    wav_reader_set_zero(app.wav);
 
     const char *filename = argv[1];
-    wav->file = fopen_binary_read(filename);
-    int wav_read_status = wav_reader_init(wav, filename);
+    app.wav->file = fopen_binary_read(filename);
+    int wav_read_status = wav_reader_init(app.wav, filename);
     if (wav_read_status != WAV_READER_SUCCESS) {
         fprintf(stderr, "Error reading wav file %s. Error code: %d.\n", filename, wav_read_status);
         return 1;
@@ -189,22 +184,17 @@ int main(int argc, char *argv[]) {
     // uiRadioButtonsOnSelected(rb, onRBSelected, NULL);
     uiBoxAppend(hbox, uiControl(rb), 0);
 
-    wavAreaHandler wav_handler_ext;
-
-    uiAreaHandler *wav_display_handler = &wav_handler_ext.handler;
+    uiAreaHandler wav_display_handler[1];
     wav_display_handler->Draw = handlerDraw;
     wav_display_handler->MouseEvent = handlerMouseEvent;
     wav_display_handler->MouseCrossed = handlerMouseCrossed;
     wav_display_handler->DragBroken = handlerDragBroken;
     wav_display_handler->KeyEvent = handlerKeyEvent;
 
-    // wav_handler_ext.window_width = 10000;
-    // wav_handler_ext.window_height = 400;
-    wav_handler_ext.wav = wav;
-    wav_handler_ext.show_pixel = 1;
-    wav_handler_ext.show_sample = 1;
+    app.show_pixel = 1;
+    app.show_sample = 1;
 
-    uiArea *wav_display_area = uiNewScrollingArea(wav_display_handler, wavAreaHandlerPixelSize(&wav_handler_ext), 400);
+    uiArea *wav_display_area = uiNewScrollingArea(wav_display_handler, showWavPixelSize(), 400);
     uiBoxAppend(vbox, uiControl(wav_display_area), 1);
 
     uiControlShow(uiControl(mainwin));
