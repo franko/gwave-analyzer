@@ -8,6 +8,7 @@
 #define colorWhite 0xFFFFFF
 #define colorBlack 0x000000
 #define colorDodgerBlue 0x1E90FF
+#define maxPixelShow 200 * 2048
 
 struct {
     wav_reader_t wav[1];
@@ -54,24 +55,30 @@ static void handlerDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) {
     uiDrawPathEnd(path);
     uiDrawFill(p->Context, path, &brush);
     uiDrawFreePath(path);
-#if 0
+
     setSolidBrush(&brush, colorDodgerBlue, 1.0);
     path = uiDrawNewPath(uiDrawFillModeWinding);
 
-    uiDrawPathNewFigure(path, , yoffTop);
-
-    int sample = 0;
-    while (1) {
+    wav_reader_seek(app.wav, 0);
+    uiDrawPathNewFigure(path, 0, 200);
+    const int max_samples = maxPixelShow * app.show_sample / app.show_pixel;
+    for (int sample = 0; sample < max_samples; sample++) {
         double amp[2];
-        getone(wh->wav, amp);
-        double x = sample * wh->show_pixel / wh->show_sample;
-        double y = amp * 200 + 200;
-        uiDrawPathLineTo(path, x, y);
+        getone(app.wav, amp);
+        double x = (double) (sample * app.show_pixel) / app.show_sample;
+        double y = amp[0] * 200 + 200;
+        uiDrawPathLineTo(path, (double) x, y);
     }
     uiDrawPathEnd(path);
+
+    uiDrawStrokeParams sp;
+    memset(&sp, 0, sizeof (uiDrawStrokeParams));
+    sp.Cap = uiDrawLineCapFlat;
+    sp.Join = uiDrawLineJoinMiter;
+    sp.Thickness = 1;
+    sp.MiterLimit = uiDrawDefaultMiterLimit;
     uiDrawStroke(p->Context, path, &brush, &sp);
     uiDrawFreePath(path);
-#endif
 }
 
 static void handlerMouseEvent(uiAreaHandler *a, uiArea *area, uiAreaMouseEvent *e) {
