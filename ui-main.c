@@ -78,39 +78,15 @@ static void handlerDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) {
 }
 
 static void handlerMouseEvent(uiAreaHandler *a, uiArea *area, uiAreaMouseEvent *e) {
-#if 0
-    double graphWidth, graphHeight;
-    double xs[10], ys[10];
-    int i;
-
-    graphSize(e->AreaWidth, e->AreaHeight, &graphWidth, &graphHeight);
-    pointLocations(graphWidth, graphHeight, xs, ys);
-
-    for (i = 0; i < 10; i++)
-        if (inPoint(e->X, e->Y, xs[i], ys[i]))
-            break;
-    if (i == 10)        // not in a point
-        i = -1;
-
-    currentPoint = i;
-    // TODO only redraw the relevant area
-    uiAreaQueueRedrawAll(histogram);
-#endif
 }
 
-static void handlerMouseCrossed(uiAreaHandler *ah, uiArea *a, int left)
-{
-    // do nothing
+static void handlerMouseCrossed(uiAreaHandler *ah, uiArea *a, int left) {
 }
 
-static void handlerDragBroken(uiAreaHandler *ah, uiArea *a)
-{
-    // do nothing
+static void handlerDragBroken(uiAreaHandler *ah, uiArea *a) {
 }
 
-static int handlerKeyEvent(uiAreaHandler *ah, uiArea *a, uiAreaKeyEvent *e)
-{
-    // reject all keys
+static int handlerKeyEvent(uiAreaHandler *ah, uiArea *a, uiAreaKeyEvent *e) {
     return 0;
 }
 
