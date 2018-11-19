@@ -8,17 +8,13 @@
 #define colorWhite 0xFFFFFF
 #define colorBlack 0x000000
 #define colorDodgerBlue 0x1E90FF
-#define maxPixelShow 200 * 2048
 
 struct {
     wav_reader_t wav[1];
-    int show_pixel;
-    int show_sample;
+    int sample_start;
+    int sample_size;
+    uiArea *area;
 } app;
-
-int showWavPixelSize() {
-    return app.wav->spec.num_sample * app.show_pixel / app.show_sample;
-}
 
 static int onClosing(uiWindow *w, void *data) {
     uiQuit();
@@ -51,7 +47,7 @@ static void handlerDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) {
     setSolidBrush(&brush, colorWhite, 1.0);
 
     uiDrawPath *path = uiDrawNewPath(uiDrawFillModeWinding);
-    uiDrawPathAddRectangle(path, 0, 0, showWavPixelSize(), 400);
+    uiDrawPathAddRectangle(path, 0, 0, p->AreaWidth, p->AreaHeight);
     uiDrawPathEnd(path);
     uiDrawFill(p->Context, path, &brush);
     uiDrawFreePath(path);
@@ -59,14 +55,14 @@ static void handlerDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams *p) {
     setSolidBrush(&brush, colorDodgerBlue, 1.0);
     path = uiDrawNewPath(uiDrawFillModeWinding);
 
-    wav_reader_seek(app.wav, 0);
-    uiDrawPathNewFigure(path, 0, 200);
-    const int max_samples = maxPixelShow * app.show_sample / app.show_pixel;
-    for (int sample = 0; sample < max_samples; sample++) {
+    wav_reader_seek(app.wav, app.sample_start);
+    uiDrawPathNewFigure(path, 0, p->AreaHeight / 2);
+    const double sample_pixel_size = (double)p->AreaWidth / (double)app.sample_size;
+    for (int sample = 0; sample < app.sample_size; sample++) {
         double amp[2];
         getone(app.wav, amp);
-        double x = (double) (sample * app.show_pixel) / app.show_sample;
-        double y = amp[0] * 200 + 200;
+        double x = sample * sample_pixel_size;
+        double y = amp[0] * p->AreaHeight / 2 + p->AreaHeight / 2;
         uiDrawPathLineTo(path, (double) x, y);
     }
     uiDrawPathEnd(path);
@@ -116,6 +112,18 @@ static int handlerKeyEvent(uiAreaHandler *ah, uiArea *a, uiAreaKeyEvent *e)
 {
     // reject all keys
     return 0;
+}
+
+static void onSpinboxOffsetChanged(uiSpinbox *spinbox, void *data) {
+    const int offset = uiSpinboxValue(spinbox);
+    app.sample_start = offset * (app.wav->spec.num_sample / 100);
+    uiAreaQueueRedrawAll(app.area);
+}
+
+static void onSliderZoomChanged(uiSlider *slider, void *data) {
+    const unsigned int p = uiSliderValue(slider);
+    app.sample_size = (1 << p);
+    uiAreaQueueRedrawAll(app.area);
 }
 
 static FILE *fopen_binary_read(const char *filename) {
@@ -175,13 +183,15 @@ int main(int argc, char *argv[]) {
     uiBoxAppend(hbox, uiControl(uiNewButton("Fourier")), 0);
 
     uiSpinbox *spinbox = uiNewSpinbox(0, 100);
-    // uiSpinboxOnChanged(spinbox, onSpinboxChanged, NULL);
+    uiSpinboxOnChanged(spinbox, onSpinboxOffsetChanged, NULL);
     uiBoxAppend(hbox, uiControl(spinbox), 1);
 
+    const unsigned int slider_initial_value = 12;
     uiGroup *group = uiNewGroup("Zoom");
     uiBoxAppend(hbox, uiControl(group), 1);
-    uiSlider *slider = uiNewSlider(0, 10);
-    // uiSliderOnChanged(slider, onSliderChanged, NULL);
+    uiSlider *slider = uiNewSlider(6, 20);
+    uiSliderSetValue(slider, slider_initial_value);
+    uiSliderOnChanged(slider, onSliderZoomChanged, NULL);
     uiGroupSetChild(group, uiControl(slider));
 
     uiRadioButtons *rb = uiNewRadioButtons();
@@ -198,11 +208,11 @@ int main(int argc, char *argv[]) {
     wav_display_handler->DragBroken = handlerDragBroken;
     wav_display_handler->KeyEvent = handlerKeyEvent;
 
-    app.show_pixel = 1;
-    app.show_sample = 1;
+    app.sample_size = (1 << slider_initial_value);
+    app.sample_start = 0;
 
-    uiArea *wav_display_area = uiNewScrollingArea(wav_display_handler, showWavPixelSize(), 400);
-    uiBoxAppend(vbox, uiControl(wav_display_area), 1);
+    app.area = uiNewArea(wav_display_handler);
+    uiBoxAppend(vbox, uiControl(app.area), 1);
 
     uiControlShow(uiControl(mainwin));
     uiMain();
