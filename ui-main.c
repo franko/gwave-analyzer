@@ -3,6 +3,7 @@
 #include <ui.h>
 
 #include "wav_reader.h"
+#include "ui-fourier.h"
 
 // names and values from https://msdn.microsoft.com/en-us/library/windows/desktop/dd370907%28v=vs.85%29.aspx
 #define colorWhite 0xFFFFFF
@@ -103,7 +104,8 @@ static void onSliderZoomChanged(uiSlider *slider, void *data) {
 }
 
 static void onFourierClicked(uiButton *b, void *data) {
-
+    compute_fourier(app.wav, app.sample_start, app.sample_size);
+    open_fourier_window();
 }
 
 static FILE *fopen_binary_read(const char *filename) {
@@ -160,7 +162,7 @@ int main(int argc, char *argv[]) {
     uiBoxSetPadded(hbox, 1);
     uiBoxAppend(vbox, uiControl(hbox), 0);
 
-    uiButton fourier_button = uiNewButton("Fourier");
+    uiButton *fourier_button = uiNewButton("Fourier");
     uiBoxAppend(hbox, uiControl(fourier_button), 0);
     uiButtonOnClicked(fourier_button, onFourierClicked, NULL);
 

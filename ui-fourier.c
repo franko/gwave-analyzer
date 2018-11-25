@@ -1,5 +1,8 @@
+#include <string.h>
+
 #include "ui-fourier.h"
 #include "fourier.h"
+#include "wav2midi_priv.h"
 
 typedef struct {
     double *fourier_coeffs;
@@ -9,7 +12,7 @@ typedef struct {
     uiArea *area;
 } fourier_display_info;
 
-static uiWindow *fourier_window;
+static uiWindow *fourier_window = NULL;
 
 static fourier_display_info fourier_display;
 
@@ -25,6 +28,8 @@ void compute_fourier(wav_reader_t *wav, int sample_start, int sample_size) {
     for (int i = 0; i < 2 * sample_size; i++) {
         fourier_display.fourier_coeffs[i] = cv[i];
     }
+    fourier_display.freq_size = sample_size;
+    fourier_display.freq_start = 0;
 }
 
 #define colorWhite 0xFFFFFF
@@ -60,7 +65,7 @@ static void handlerFourierDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams 
     setSolidBrush(&brush, colorDodgerBlue, 1.0);
     path = uiDrawNewPath(uiDrawFillModeWinding);
     uiDrawPathNewFigure(path, 0, p->AreaHeight / 2);
-    const double freq_spacing = (double)p->AreaWidth / (double)fourier_display_info.freq_size;
+    const double freq_spacing = (double)p->AreaWidth / (double)fourier_display.freq_size;
     for (int k = 0; k < fourier_display.freq_size; k++) {
         const double fcr = fourier_display.fourier_coeffs[2 * k], fci = fourier_display.fourier_coeffs[2 * k + 1];
         const double intensity = fcr * fcr + fci * fci;
@@ -93,10 +98,28 @@ static int handlerFourierKeyEvent(uiAreaHandler *ah, uiArea *a, uiAreaKeyEvent *
     return 0;
 }
 
+static void onSpinboxOffsetChanged(uiSpinbox *spinbox, void *data) {
+    const int offset = uiSpinboxValue(spinbox);
+    fourier_display.freq_start = offset * (fourier_display.fourier_size / 100);
+    uiAreaQueueRedrawAll(fourier_display.area);
+}
+
+static void onSliderZoomChanged(uiSlider *slider, void *data) {
+    const unsigned int p = uiSliderValue(slider);
+    fourier_display.freq_size = fourier_display.fourier_size >> p;
+    uiAreaQueueRedrawAll(fourier_display.area);
+}
+
+static int onFourierClosing(uiWindow *w, void *data) {
+    uiControlDestroy(uiControl(fourier_window));
+    fourier_window = NULL;
+    return 1;
+}
+
 static uiWindow *new_fourier_window() {
-    uiWindow *win = uiNewWindow("Fourier transform", 640, 480, NULL);
+    uiWindow *win = uiNewWindow("Fourier transform", 640, 480, 0);
     uiWindowSetMargined(win, 1);
-    // uiWindowOnClosing(win, onClosing, NULL);
+    uiWindowOnClosing(win, onFourierClosing, NULL);
 
     uiBox *vbox = uiNewVerticalBox();
     uiBoxSetPadded(vbox, 1);
@@ -128,8 +151,6 @@ static uiWindow *new_fourier_window() {
 
     fourier_display.fourier_coeffs = NULL;
     fourier_display.fourier_size = 0;
-    fourier_display.freq_size = sample_size;
-    fourier_display.fred_start = 0;
 
     fourier_display.area = uiNewArea(f_handler);
     uiBoxAppend(vbox, uiControl(fourier_display.area), 1);
@@ -138,9 +159,12 @@ static uiWindow *new_fourier_window() {
     return win;
 }
 
-uiWindow *gwave_open_fourier_window() {
-    if (fourier_window) {
-        return fourier_window;
+void open_fourier_window() {
+    if (!fourier_window) {
+        fourier_window = new_fourier_window();
     }
-    return new_fourier_window();
+}
+
+void refresh_fourier_window() {
+    uiAreaQueueRedrawAll(fourier_display.area);
 }
