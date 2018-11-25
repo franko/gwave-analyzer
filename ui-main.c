@@ -11,9 +11,9 @@
 
 struct {
     wav_reader_t wav[1];
-    int sample_start;
-    int sample_size;
-    uiArea *area;
+    int sample_start; /* Where the shown waveform starts, in samples number. */
+    int sample_size; /* Number for waveform's sample to show on window. */
+    uiArea *area; /* Area used to show waveform. */
 } app;
 
 static int onClosing(uiWindow *w, void *data) {
@@ -102,6 +102,10 @@ static void onSliderZoomChanged(uiSlider *slider, void *data) {
     uiAreaQueueRedrawAll(app.area);
 }
 
+static void onFourierClicked(uiButton *b, void *data) {
+
+}
+
 static FILE *fopen_binary_read(const char *filename) {
 #ifdef WIN32
     return fopen(filename, "rb");
@@ -156,7 +160,9 @@ int main(int argc, char *argv[]) {
     uiBoxSetPadded(hbox, 1);
     uiBoxAppend(vbox, uiControl(hbox), 0);
 
-    uiBoxAppend(hbox, uiControl(uiNewButton("Fourier")), 0);
+    uiButton fourier_button = uiNewButton("Fourier");
+    uiBoxAppend(hbox, uiControl(fourier_button), 0);
+    uiButtonOnClicked(fourier_button, onFourierClicked, NULL);
 
     uiSpinbox *spinbox = uiNewSpinbox(0, 100);
     uiSpinboxOnChanged(spinbox, onSpinboxOffsetChanged, NULL);
