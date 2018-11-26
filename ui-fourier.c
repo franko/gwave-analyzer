@@ -20,7 +20,7 @@ static uiWindow *fourier_window = NULL;
 static uiAreaHandler f_handler[1];
 
 static void compute_fourier(wav_reader_t *wav, int sample_start, int sample_size) {
-    fourier(wav, sample_size, sample_start);
+    wav_read_fourier(wav, sample_size, sample_start);
     free(fourier_display.fourier_coeffs);
     fourier_display.fourier_coeffs = malloc(sizeof(double) * 2 * sample_size);
     if (fourier_display.fourier_coeffs == NULL) {

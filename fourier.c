@@ -1,19 +1,67 @@
 #include "wav2midi_priv.h"
 #include "fourier.h"
 
+/* [NOV-2018] Compute the FFT of the value array of given size.
+   The size should be a power of two. */
+static void fourier(double value[], int size) {
+    double wi, wr, wti, wtr, temi, temr;
+
+    int rif = ilog2(size);
+    int j = 1;
+    int m = size / 2;
+    while (j < size) {
+        temr         = value[2*j];
+        temi         = value[2*j+1];
+        value[2*j]   = value[2*m];
+        value[2*j+1] = value[2*m+1];
+        value[2*m]   = temr;
+        value[2*m+1] = temi;
+        do {
+            j ++;
+            int i = pow2(rif - 1);
+            do {
+                if (m < i) {
+                    m += i;
+                    break;
+                } else {
+                    m -= i;
+                    i /= 2;
+                }
+            } while (i);
+        } while ((m <= j) && (j < size));
+    }
+    int pd = 1;
+    for (int i = 0; i < rif; i++) {
+        pd = 2 * pd;
+        wtr = cos(PI_2 / (double) pd);
+        wti = sin(PI_2 / (double) pd);
+        for (j = 0; j < 2 * size; j += 2 * pd) {
+            wr = 1.;
+            wi = 0.;
+            for (int k = j; k < j + pd; k += 2) {
+                temr = value[k + pd];
+                temi = value[k + pd + 1];
+                value[k + pd]     = value[k]     - wr*temr + wi*temi;
+                value[k + pd + 1] = value[k + 1] - wi*temr - wr*temi;
+                value[k]          = value[k]     + wr*temr - wi*temi;
+                value[k + 1]      = value[k + 1] + wi*temr + wr*temi;
+                temr = wr;
+                wr = wtr*wr - wi*wti;
+                wi = wtr*wi + temr*wti;
+            }
+        }
+    }
+}
+
 /* [OCT-2018] Read "noc" samples from wav file starting from "loc_offs"
    and compute the Fourier transform in the global array "cv". */
-int fourier(wav_reader_t *wav, long int noc, int loc_offs) {
-    unsigned int k, pd, i, j, m, nod;
-    double wi, wr, wti, wtr, temi, temr;
-    int rif;
+int wav_read_fourier(wav_reader_t *wav, long int noc, int loc_offs) {
     double ya, yb, ir, passo;
     int imin, iad;
 
     fprintf(stderr, "fourier transform begin\n");
 
-    nod = ceiltopow( noc );
-    rif = ilog2( nod );
+    unsigned int nod = ceiltopow( noc );
 
     if ( nod > cvall ) {
         cvall = nod;
@@ -31,70 +79,26 @@ int fourier(wav_reader_t *wav, long int noc, int loc_offs) {
         getone(wav, &ya);
         getone(wav, &yb);
         int samples_used = 2;
-        i = 0;
+        int i = 0;
         iad = 1;
         do {
             imin = (int) ir;
-            if ( imin >= iad ) {
+            if (imin >= iad) {
                 ya = yb;
                 getone(wav, &yb);
                 samples_used++;
                 iad++;
             }
-            cv[ 2*i+1 ] = 0;
-
-            cv[ 2*i ] = ya*( imin+1-ir ) + yb*(ir-imin);
-            i++;
+            cv[2 * i + 1] = 0;
+            cv[2 * i] = ya * (imin + 1 - ir) + yb * (ir - imin);
+            i ++;
             ir += passo;
-        } while ( i < nod );
+        } while (i < nod);
 
         fprintf(stderr, "getdata* %d-%d\n", loc_offs, loc_offs + samples_used);
     }
 
-    j= 1;
-    m= nod/2;
-    while ( j < nod ) {
-        temr      = cv[2*j];
-        temi      = cv[2*j+1];
-        cv[2*j] = cv[2*m];
-        cv[2*j+1] = cv[2*m+1];
-        cv[2*m] = temr;
-        cv[2*m+1] = temi;
-        do {
-            j++;
-            i = pow2( rif - 1 );
-            do {
-                if ( m < i ) {
-                    m += i;
-                    break; }
-                else {
-                    m -= i;
-                    i /= 2; }
-            } while ( i );
-        }
-        while ( ( m<=j ) && ( j<nod ) );
-    }
-    pd=1;
-    for ( i= 0; i < rif; i++ ) {
-        pd = 2*pd;
-        wtr= cosl( PI_2/ (double) pd );
-        wti= sinl( PI_2/ (double) pd );
-        for ( j= 0; j < 2*nod; j+=2*pd ) {
-            wr= 1.; wi= 0.;
-            for ( k= j; k < j+pd; k+=2 ) {
-                temr = cv[ k+pd ];
-                temi = cv[ k+pd+1 ];
-                cv[ k+pd   ] = cv[ k   ] - wr*temr + wi*temi;
-                cv[ k+pd+1 ] = cv[ k+1 ] - wi*temr - wr*temi;
-                cv[ k   ]    = cv[ k   ] + wr*temr - wi*temi;
-                cv[ k+1 ]    = cv[ k+1 ] + wi*temr + wr*temi;
-                temr= wr;
-                wr = wtr*wr - wi*wti;
-                wi = wtr*wi + temr*wti;
-            }
-        }
-    }
-
+    fourier(cv, nod);
     fprintf(stderr, "fourier transform end\n");
  
     return 0;
@@ -422,7 +426,7 @@ double detfreq(wav_reader_t *wav, long int nod, char *puro, char *nullo, double 
        frequency. */
     for ( iflag=0; iflag<2; iflag++ ) {
 
-        fourier(wav, nod, loc_offs);
+        wav_read_fourier(wav, nod, loc_offs);
 
         if ( iflag == 0 )
             nnod = nod;
