@@ -94,18 +94,19 @@ static int handlerKeyEvent(uiAreaHandler *ah, uiArea *a, uiAreaKeyEvent *e) {
 static void onSpinboxOffsetChanged(uiSpinbox *spinbox, void *data) {
     const int offset = uiSpinboxValue(spinbox);
     app.sample_start = offset * (app.wav->spec.num_sample / 100);
+    update_fourier_window(app.wav, app.sample_start, app.sample_size);
     uiAreaQueueRedrawAll(app.area);
 }
 
 static void onSliderZoomChanged(uiSlider *slider, void *data) {
     const unsigned int p = uiSliderValue(slider);
     app.sample_size = (1 << p);
+    update_fourier_window(app.wav, app.sample_start, app.sample_size);
     uiAreaQueueRedrawAll(app.area);
 }
 
 static void onFourierClicked(uiButton *b, void *data) {
-    compute_fourier(app.wav, app.sample_start, app.sample_size);
-    open_fourier_window();
+    open_fourier_window(app.wav, app.sample_start, app.sample_size);
 }
 
 static FILE *fopen_binary_read(const char *filename) {

@@ -19,7 +19,7 @@ static struct {
 static uiWindow *fourier_window = NULL;
 static uiAreaHandler f_handler[1];
 
-void compute_fourier(wav_reader_t *wav, int sample_start, int sample_size) {
+static void compute_fourier(wav_reader_t *wav, int sample_start, int sample_size) {
     fourier(wav, sample_size, sample_start);
     free(fourier_display.fourier_coeffs);
     fourier_display.fourier_coeffs = malloc(sizeof(double) * 2 * sample_size);
@@ -173,12 +173,16 @@ static uiWindow *new_fourier_window() {
     return win;
 }
 
-void open_fourier_window() {
+void open_fourier_window(wav_reader_t *wav, int sample_start, int sample_size) {
     if (!fourier_window) {
+        compute_fourier(wav, sample_start, sample_size);
         fourier_window = new_fourier_window();
     }
 }
 
-void refresh_fourier_window() {
-    uiAreaQueueRedrawAll(controls.area);
+void update_fourier_window(wav_reader_t *wav, int sample_start, int sample_size) {
+    if (fourier_window) {
+        compute_fourier(wav, sample_start, sample_size);
+        uiAreaQueueRedrawAll(controls.area);
+    }
 }
