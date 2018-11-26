@@ -4,17 +4,20 @@
 #include "fourier.h"
 #include "wav2midi_priv.h"
 
-typedef struct {
+static struct {
     double *fourier_coeffs;
     int fourier_size;
-    int freq_start;
-    int freq_size;
+    double intensity_max;
+} fourier_display;
+
+static struct {
+    uiSpinbox *offset_spinbox;
+    uiSlider *zoom_slider;
     uiArea *area;
-} fourier_display_info;
+} controls;
 
 static uiWindow *fourier_window = NULL;
-
-static fourier_display_info fourier_display;
+static uiAreaHandler f_handler[1];
 
 void compute_fourier(wav_reader_t *wav, int sample_start, int sample_size) {
     fourier(wav, sample_size, sample_start);
@@ -28,8 +31,16 @@ void compute_fourier(wav_reader_t *wav, int sample_start, int sample_size) {
     for (int i = 0; i < 2 * sample_size; i++) {
         fourier_display.fourier_coeffs[i] = cv[i];
     }
-    fourier_display.freq_size = sample_size;
-    fourier_display.freq_start = 0;
+
+    double intensity_max = 0.0;
+    for (int k = 0; k < 2 * sample_size; k += 2) {
+        const double fcr = fourier_display.fourier_coeffs[k], fci = fourier_display.fourier_coeffs[k + 1];
+        const double intensity = fcr * fcr + fci * fci;
+        if (intensity > intensity_max) {
+            intensity_max = intensity;
+        }
+    }
+    fourier_display.intensity_max = intensity_max;
 }
 
 #define colorWhite 0xFFFFFF
@@ -62,16 +73,25 @@ static void handlerFourierDraw(uiAreaHandler *a, uiArea *area, uiAreaDrawParams 
 
     if (fourier_display.fourier_size == 0) return;
 
+    const int zoom = uiSliderValue(controls.zoom_slider);
+    const int offset = uiSpinboxValue(controls.offset_spinbox);
+    const int freq_size = fourier_display.fourier_size >> zoom;
+    const int freq_start = (offset * fourier_display.fourier_size) / 100;
+
     setSolidBrush(&brush, colorDodgerBlue, 1.0);
     path = uiDrawNewPath(uiDrawFillModeWinding);
-    uiDrawPathNewFigure(path, 0, p->AreaHeight / 2);
-    const double freq_spacing = (double)p->AreaWidth / (double)fourier_display.freq_size;
-    for (int k = 0; k < fourier_display.freq_size; k++) {
-        const double fcr = fourier_display.fourier_coeffs[2 * k], fci = fourier_display.fourier_coeffs[2 * k + 1];
+    const double freq_spacing = (double)p->AreaWidth / freq_size;
+    const double y_margin = p->AreaHeight * 0.05;
+    const double y_height = p->AreaHeight * 0.9;
+    for (int k = 0; k < freq_size; k++) {
+        const int i = 2 * (freq_start + k);
+        if (freq_start + k >= fourier_display.fourier_size) break;
+        const double fcr = fourier_display.fourier_coeffs[i], fci = fourier_display.fourier_coeffs[i + 1];
         const double intensity = fcr * fcr + fci * fci;
         const double x = k * freq_spacing;
-        const double y = intensity * p->AreaHeight / 2 + p->AreaHeight / 2;
-        uiDrawPathLineTo(path, (double) x, y);
+        const double y = y_margin + y_height - (intensity / fourier_display.intensity_max) * y_height;
+        uiDrawPathNewFigure(path, x, y_margin + y_height);
+        uiDrawPathLineTo(path, x, y);
     }
     uiDrawPathEnd(path);
 
@@ -99,19 +119,14 @@ static int handlerFourierKeyEvent(uiAreaHandler *ah, uiArea *a, uiAreaKeyEvent *
 }
 
 static void onSpinboxOffsetChanged(uiSpinbox *spinbox, void *data) {
-    const int offset = uiSpinboxValue(spinbox);
-    fourier_display.freq_start = offset * (fourier_display.fourier_size / 100);
-    uiAreaQueueRedrawAll(fourier_display.area);
+    uiAreaQueueRedrawAll(controls.area);
 }
 
 static void onSliderZoomChanged(uiSlider *slider, void *data) {
-    const unsigned int p = uiSliderValue(slider);
-    fourier_display.freq_size = fourier_display.fourier_size >> p;
-    uiAreaQueueRedrawAll(fourier_display.area);
+    uiAreaQueueRedrawAll(controls.area);
 }
 
 static int onFourierClosing(uiWindow *w, void *data) {
-    uiControlDestroy(uiControl(fourier_window));
     fourier_window = NULL;
     return 1;
 }
@@ -130,10 +145,10 @@ static uiWindow *new_fourier_window() {
     uiBoxAppend(vbox, uiControl(hbox), 0);
 
     uiGroup *pos_group = uiNewGroup("Position");
+    uiBoxAppend(hbox, uiControl(pos_group), 1);
     uiSpinbox *spinbox = uiNewSpinbox(0, 100);
     uiSpinboxOnChanged(spinbox, onSpinboxOffsetChanged, NULL);
     uiGroupSetChild(pos_group, uiControl(spinbox));
-    uiBoxAppend(hbox, uiControl(pos_group), 1);
  
     uiGroup *group = uiNewGroup("Zoom");
     uiBoxAppend(hbox, uiControl(group), 1);
@@ -142,18 +157,17 @@ static uiWindow *new_fourier_window() {
     uiSliderOnChanged(slider, onSliderZoomChanged, NULL);
     uiGroupSetChild(group, uiControl(slider));
 
-    uiAreaHandler f_handler[1];
     f_handler->Draw = handlerFourierDraw;
     f_handler->MouseEvent = handlerFourierMouseEvent;
     f_handler->MouseCrossed = handlerFourierMouseCrossed;
     f_handler->DragBroken = handlerFourierDragBroken;
     f_handler->KeyEvent = handlerFourierKeyEvent;
 
-    fourier_display.fourier_coeffs = NULL;
-    fourier_display.fourier_size = 0;
+    controls.offset_spinbox = spinbox;
+    controls.zoom_slider = slider;
 
-    fourier_display.area = uiNewArea(f_handler);
-    uiBoxAppend(vbox, uiControl(fourier_display.area), 1);
+    controls.area = uiNewArea(f_handler);
+    uiBoxAppend(vbox, uiControl(controls.area), 1);
 
     uiControlShow(uiControl(win));
     return win;
@@ -166,5 +180,5 @@ void open_fourier_window() {
 }
 
 void refresh_fourier_window() {
-    uiAreaQueueRedrawAll(fourier_display.area);
+    uiAreaQueueRedrawAll(controls.area);
 }
