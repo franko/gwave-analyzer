@@ -5,9 +5,14 @@
 // Amplitude below which the sound will be considered null.
 #define MAXAMPTOL 0.05
 
+/* [NOV-2018] This struct represent an musical note that is played at some moment.
+   - offs_inizio, start time of the note, in samples number (not used when writing midi file)
+   - nota, the musical note, I guess is a integer encoding counting the semitones
+   - pd, duration time of the silence following the note (in some units)
+   - nd, duration time of the note (in some units, the same of "pd")
+*/
 typedef struct {
     long int offs_inizio;
-    int durata_nota;
     int nota;
     int pd;
     int nd;

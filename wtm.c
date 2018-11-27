@@ -226,9 +226,6 @@ as_break:
         goto sec_point;
     }
     else {
-
-        if ( eva.nd ) eva.durata_nota = jj;
-        else eva.durata_nota = 0;
         ev_list.begin [ ev_list.number ] = eva;
         ev_list.number++;
         eva.offs_inizio = offs - lnod - nn;
