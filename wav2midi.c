@@ -35,7 +35,7 @@ void nome_nota( int nota, char *str ) {
     if ( rim ) strcat( str, "#" );
 }
 
-    void wav2midi_do_conversion(wav_reader_t *wav) {
+void wav2midi_do_conversion(wav_reader_t *wav) {
     int status = wav_to_midi_stepping(wav, 1);
     while (status >= 0) {
         status = wav_to_midi_stepping(wav, 0);
