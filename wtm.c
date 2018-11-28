@@ -82,10 +82,9 @@ int write_midi() {
         
             if ( text_f )
                 {
-                    nome_nota( ev_list.begin [ i ].nota, str_nota );
-                    fprintf( text_f, "%4s %3i, %3i, %3i\n", str_nota,
-                	   ev_list.begin [ i ].nota, ev_list.begin [ i ].nd,
-                	   ev_list.begin [ i ].pd );
+                    const event_t *ev = &ev_list.begin[i];
+                    nome_nota(ev->nota, str_nota);
+                    fprintf(text_f, "%4s, %3i, %3i, %3i, %8.1f\n", str_nota, ev->nota, ev->nd, ev->pd, ev->dominant_freq);
                 }
         }
     dur += 4*ev_list.number + 3;
@@ -119,6 +118,7 @@ long int wav_to_midi_stepping(wav_reader_t *wav, char first_time) {
     static char eoinpf, anal_fatt;
     static double intens, fr, chiq;
     static int lnod, nota;
+    static float dominant_freq, o_dominant_freq;
     static char puro, nullo;
     static event_t eva;
     const int wav_frequency = wav->spec.freq;
@@ -184,8 +184,10 @@ long int wav_to_midi_stepping(wav_reader_t *wav, char first_time) {
         nn += lnod;
     else {
         nota = freq2nota( fr );
+        dominant_freq = fr;
         if ( trovata )
             if ( nota == o_nota ) {
+                fprintf(stderr, "merge notes: old frequency: %8.1f new: %8.1f\n", o_dominant_freq, dominant_freq);
                 jj += nn + lnod;
                 nn = 0;
             }
@@ -199,6 +201,7 @@ long int wav_to_midi_stepping(wav_reader_t *wav, char first_time) {
             jj += nn + lnod;
             nn = 0;
             o_nota = nota;
+            o_dominant_freq = dominant_freq;
         }
     }
     return offs;
@@ -207,6 +210,7 @@ as_break:
     anal_fatt = 1;
 
     eva.nota = o_nota;
+    eva.dominant_freq = o_dominant_freq;
     eva.pd = camp2dur(ii, wav_frequency);
     eva.nd = camp2dur(jj, wav_frequency);
 

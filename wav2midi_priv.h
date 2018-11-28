@@ -7,12 +7,14 @@
 
 /* [NOV-2018] This struct represent an musical note that is played at some moment.
    - offs_inizio, start time of the note, in samples number (not used when writing midi file)
-   - nota, the musical note, I guess is a integer encoding counting the semitones
+   - dominant_freq, frequency on the dominant in Hz
+   - nota, the musical note, in semitone, given by 12 * (log2(freq) - 8.2)) + 62
    - pd, duration time of the silence following the note (in some units)
    - nd, duration time of the note (in some units, the same of "pd")
 */
 typedef struct {
     long int offs_inizio;
+    float dominant_freq;
     int nota;
     int pd;
     int nd;
