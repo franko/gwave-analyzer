@@ -34,9 +34,13 @@ int mididur( int dur, FILE *loutf ) {
     return j+1;
 } 
 
-int freq2nota( double fr ) {
-    int nota;
-    nota = (int) rint( 12*( LOG2D( fr ) - 8.2 ) + corr_arm + 62 );
+static double freq2pitch(double fr) {
+    return 12.0 * (LOG2D(fr) - 8.2) + 62.0;
+}
+
+static int freq2nota(double fr) {
+    double pitch = freq2pitch(fr);
+    int nota = rint(pitch + corr_arm);
     if ( nota < 0 || nota > 255 ) nota = 0;
     return nota;
 }
@@ -84,7 +88,9 @@ int write_midi() {
                 {
                     const event_t *ev = &ev_list.begin[i];
                     nome_nota(ev->nota, str_nota);
-                    fprintf(text_f, "%4s, %3i, %3i, %3i, %8.1f\n", str_nota, ev->nota, ev->nd, ev->pd, ev->dominant_freq);
+                    const double start_sec = (double) ev->offs_inizio / 44100.0;
+                    const double pitch = freq2pitch(ev->dominant_freq);
+                    fprintf(text_f, "%4s, %3i, %8g, %3i, %3i, %8.1f, %8.4f\n", str_nota, ev->nota, start_sec, ev->nd, ev->pd, ev->dominant_freq, pitch);
                 }
         }
     dur += 4*ev_list.number + 3;
@@ -110,6 +116,8 @@ int write_midi() {
     fprintf(stdout, "\nThe melodic analisys has been successfully executed.\nThe result is written in the file melody.mid\n");
     return 0;
 }
+
+#define MERGE_NOTES 0
 
 long int wav_to_midi_stepping(wav_reader_t *wav, char first_time) {
     static long int nn, ii, jj;
@@ -186,7 +194,7 @@ long int wav_to_midi_stepping(wav_reader_t *wav, char first_time) {
         nota = freq2nota( fr );
         dominant_freq = fr;
         if ( trovata )
-            if ( nota == o_nota ) {
+            if ( MERGE_NOTES && nota == o_nota ) {
                 fprintf(stderr, "merge notes: old frequency: %8.1f new: %8.1f\n", o_dominant_freq, dominant_freq);
                 jj += nn + lnod;
                 nn = 0;

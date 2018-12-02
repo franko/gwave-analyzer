@@ -9,8 +9,8 @@
    - offs_inizio, start time of the note, in samples number (not used when writing midi file)
    - dominant_freq, frequency on the dominant in Hz
    - nota, the musical note, in semitone, given by 12 * (log2(freq) - 8.2)) + 62
-   - pd, duration time of the silence following the note (in some units)
-   - nd, duration time of the note (in some units, the same of "pd")
+   - pd, duration time of the silence following the note (in 1/200 of seconds)
+   - nd, duration time of the note (in the same units of "pd")
 */
 typedef struct {
     long int offs_inizio;

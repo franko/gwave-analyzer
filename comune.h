@@ -7,7 +7,7 @@
 #define PI_2 6.28318530717958647692529
 #define LN2 0.69314718055994530941723212146
 #define SQR(x) (x)*(x)
-#define LOG2D(x) log(x)/(double)LN2
+#define LOG2D(x) (log(x) / (double)LN2)
 
 static __inline__ long int
 ceiltopow( long int n )
