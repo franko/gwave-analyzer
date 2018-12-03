@@ -34,11 +34,11 @@ int mididur( int dur, FILE *loutf ) {
     return j+1;
 } 
 
-static double freq2pitch(double fr) {
+double freq2pitch(double fr) {
     return 12.0 * (LOG2D(fr) - 8.2) + 62.0;
 }
 
-static int freq2nota(double fr) {
+int freq2nota(double fr) {
     double pitch = freq2pitch(fr);
     int nota = rint(pitch + corr_arm);
     if ( nota < 0 || nota > 255 ) nota = 0;
@@ -53,7 +53,7 @@ int camp2dur(long int ncam, double frequency) {
     return dur;
 }
 
-int write_midi() {
+int write_midi(event_list_t *events_list) {
     int dur, i, strum = 75;
     char buf[4], str_nota[11];
     FILE *text_f;
@@ -74,26 +74,26 @@ int write_midi() {
 
     dur = 70; /* 66 + 4(strum. spec.) */ 
 
-    for ( i = 0; i < ev_list.number; i++ )
+    for ( i = 0; i < events_list->number; i++ )
         {
-            fputc( ev_list.begin [ i ].nota, outf );
+            fputc( events_list->begin [ i ].nota, outf );
             fputc( 'd', outf );
-            dur += mididur( ev_list.begin [ i ].nd, outf );
-            fputc( ev_list.begin [ i ].nota, outf );
+            dur += mididur( events_list->begin [ i ].nd, outf );
+            fputc( events_list->begin [ i ].nota, outf );
             fputc( 0, outf );
             
-            dur += mididur( ev_list.begin [ i ].pd, outf );
+            dur += mididur( events_list->begin [ i ].pd, outf );
         
             if ( text_f )
                 {
-                    const event_t *ev = &ev_list.begin[i];
+                    const event_t *ev = &events_list->begin[i];
                     nome_nota(ev->nota, str_nota);
                     const double start_sec = (double) ev->offs_inizio / 44100.0;
                     const double pitch = freq2pitch(ev->dominant_freq);
                     fprintf(text_f, "%4s, %3i, %8g, %3i, %3i, %8.1f, %8.4f\n", str_nota, ev->nota, start_sec, ev->nd, ev->pd, ev->dominant_freq, pitch);
                 }
         }
-    dur += 4*ev_list.number + 3;
+    dur += 4*events_list->number + 3;
 
     fprintf( outf, "%c%c%c", 255, 47 , 0 );
     
@@ -261,7 +261,7 @@ as_break:
     if ( fr > (double)0 )
         return offs;
     else {
-        write_midi();
+        write_midi(&ev_list);
         return -1;
     }
 

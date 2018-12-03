@@ -9,7 +9,7 @@ endif
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required : false)
 
-gwave_src = ['debug_log.c', 'main.c', 'fourier.c', 'wav_reader.c', 'wtm.c', 'wav2midi.c']
+gwave_src = ['debug_log.c', 'main.c', 'fourier.c', 'wav_reader.c', 'wtm.c', 'wav2midi.c', 'notes_distiller.c']
 
 libui = dependency('libui')
 
@@ -19,7 +19,7 @@ executable('gwave', gwave_src,
 
 # The dummy.cpp file is there to force the linker to use g++ because
 # libui needs C++ linking.
-gwave_ui_src = ['debug_log.c', 'wtm.c', 'wav2midi.c', 'fourier.c', 'ui-fourier.c', 'ui-main.c', 'wav_reader.c', 'dummy.cpp']
+gwave_ui_src = ['debug_log.c', 'wtm.c', 'wav2midi.c', 'fourier.c', 'ui-fourier.c', 'ui-main.c', 'wav_reader.c', 'notes_distiller.c', 'dummy.cpp']
 
 if host_machine.system() == 'windows'
     gwave_ui_src += gwave_res
