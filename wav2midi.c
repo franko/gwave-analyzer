@@ -55,3 +55,23 @@ int wav2midi_init() {
     workspace_memory_alloc();
     return 0;
 }
+
+void event_list_init(event_list_t *list, const int init_alloc) {
+    list->begin = malloc(sizeof(event_t) * init_alloc);
+    list->alloc = init_alloc;
+    list->number = 0;
+}
+
+void event_list_check_size(event_list_t *list, const int size) {
+    if (size > list->alloc) {
+        int new_size = list->alloc;
+        while (new_size < size) {
+            new_size *= 2;
+        }
+        event_t *new_data = malloc(sizeof(event_t) * new_size);
+        memcpy(new_data, list->begin, sizeof(event_t) * list->number);
+        free(list->begin);
+        list->begin = new_data;
+        list->alloc = new_size;
+    }
+}

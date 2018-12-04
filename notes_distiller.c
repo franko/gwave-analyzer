@@ -2,7 +2,7 @@
 #include "notes_distiller.h"
 #include "wav2midi.h"
 
-enum { DISTILLER_ACCUMULATING, DISTILLER_EVAL_NEW };
+enum { DISTILLER_STARTING, DISTILLER_ACCUMULATING, DISTILLER_EVAL_NEW };
 enum { DISTILLER_MAX_EVAL_DURATION = 50 };
 
 struct notes_distiller_ {
@@ -69,7 +69,11 @@ int distiller_add_event(notes_distiller *dist, const event_t *ev) {
         return 1;
     }
     const double event_pitch = freq2pitch(ev->dominant_freq);
-    if (dist->status == DISTILLER_EVAL_NEW) {
+    if (dist->status == DISTILLER_STARTING) {
+        dist->status = DISTILLER_EVAL_NEW;
+        add_event_to_eval(dist, ev);
+        return check_eval_and_return(dist);
+    } else if (dist->status == DISTILLER_EVAL_NEW) {
         if (fabs(event_pitch - dist->eval_pitch) < 0.5) {
             add_event_to_eval(dist, ev);
             return check_eval_and_return(dist);
@@ -95,6 +99,13 @@ int distiller_add_event(notes_distiller *dist, const event_t *ev) {
     return 0;
 }
 
+int distiller_close(notes_distiller *dist) {
+    if (dist->status == DISTILLER_EVAL_NEW) {
+        collapse_eval_note(dist);
+    }
+    return check_eval_and_return(dist);
+}
+
 static void yield_note(notes_distiller *dist, event_t *note) {
     note->nota = rint(dist->distilled_pitch);
     note->nd = dist->distilled_duration;
@@ -108,15 +119,6 @@ int distiller_get_note(notes_distiller *dist, event_t *note) {
     if (dist->note_ready) {
         yield_note(dist, note);
         return 1;
-    } else {
-        if (dist->status == DISTILLER_EVAL_NEW) {
-            collapse_eval_note(dist);
-        }
-        if (dist->duration > DISTILLER_MAX_EVAL_DURATION) {
-            distill_current(dist, 0);
-            yield_note(dist, note);
-            return 1;
-        }
     }
     return 0;
 }
@@ -124,7 +126,7 @@ int distiller_get_note(notes_distiller *dist, event_t *note) {
 notes_distiller *notes_distiller_new() {
     notes_distiller *dist = malloc(sizeof(notes_distiller));
     if (dist) {
-        dist->status = DISTILLER_ACCUMULATING;
+        dist->status = DISTILLER_STARTING;
         dist->note_ready = 0;
         dist->duration = 0;
         dist->eval_duration = 0;

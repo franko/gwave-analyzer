@@ -1,6 +1,7 @@
 #include <string.h>
 #include "wav2midi_priv.h"
 #include "fourier.h"
+#include "notes_distiller.h"
 
 double corr_arm;
 
@@ -261,8 +262,25 @@ as_break:
     if ( fr > (double)0 )
         return offs;
     else {
-        write_midi(&ev_list);
+        notes_distiller *dist = notes_distiller_new();
+        int notes_number = 0;
+        event_list_t notes[1];
+        event_list_init(notes, 16);
+        for (int i = 0; i < ev_list.number; i++) {
+            int new_note = distiller_add_event(dist, &ev_list.begin[i]);
+            if (new_note) {
+                event_list_check_size(notes, notes_number + 1);
+                if (distiller_get_note(dist, &notes->begin[notes_number])) {
+                    notes_number ++;
+                }
+            }
+        }
+        distiller_close(dist);
+        event_list_check_size(notes, notes_number + 1);
+        if (distiller_get_note(dist, &notes->begin[notes_number])) {
+            notes_number ++;
+        }
+        write_midi(notes);
         return -1;
     }
-
 } 

@@ -50,3 +50,5 @@ extern int cvall, fpall;
 extern double filedur;
 
 extern void nome_nota(int nota, char *str);
+extern void event_list_init(event_list_t *list, const int init_alloc);
+extern void event_list_check_size(event_list_t *list, const int size);
