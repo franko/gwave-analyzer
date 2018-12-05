@@ -263,22 +263,21 @@ as_break:
         return offs;
     else {
         notes_distiller *dist = notes_distiller_new();
-        int notes_number = 0;
         event_list_t notes[1];
         event_list_init(notes, 16);
         for (int i = 0; i < ev_list.number; i++) {
             int new_note = distiller_add_event(dist, &ev_list.begin[i]);
             if (new_note) {
-                event_list_check_size(notes, notes_number + 1);
-                if (distiller_get_note(dist, &notes->begin[notes_number])) {
-                    notes_number ++;
+                event_list_check_size(notes, notes->number + 1);
+                if (distiller_get_note(dist, &notes->begin[notes->number])) {
+                    notes->number ++;
                 }
             }
         }
         distiller_close(dist);
-        event_list_check_size(notes, notes_number + 1);
-        if (distiller_get_note(dist, &notes->begin[notes_number])) {
-            notes_number ++;
+        event_list_check_size(notes, notes->number + 1);
+        if (distiller_get_note(dist, &notes->begin[notes->number])) {
+            notes->number ++;
         }
         write_midi(notes);
         return -1;

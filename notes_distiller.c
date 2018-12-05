@@ -3,7 +3,7 @@
 #include "wav2midi.h"
 
 enum { DISTILLER_STARTING, DISTILLER_ACCUMULATING, DISTILLER_EVAL_NEW };
-enum { DISTILLER_MAX_EVAL_DURATION = 50 };
+enum { DISTILLER_MAX_EVAL_DURATION = 12 };
 
 struct notes_distiller_ {
     short status;
@@ -31,6 +31,7 @@ static void distill_current(notes_distiller *dist, int pd) {
     dist->distilled_duration = dist->duration;
     dist->distilled_pause = pd;
     dist->duration = 0;
+    dist->status = DISTILLER_STARTING;
     dist->note_ready = 1;
 }
 
@@ -55,9 +56,28 @@ static void add_event_to_eval(notes_distiller *dist, const event_t *ev) {
 
 static int check_eval_and_return(notes_distiller *dist) {
     if (dist->eval_duration > DISTILLER_MAX_EVAL_DURATION) {
-        distill_current(dist, 0);
-        set_eval_as_current(dist);
-        return 1;
+        if (dist->duration > 0) {
+            distill_current(dist, 0);
+            set_eval_as_current(dist);
+            return 1;
+        } else {
+            set_eval_as_current(dist);
+            return 0;
+        }
+    }
+    return 0;
+}
+
+static int pitch_match_eval(const notes_distiller *dist, const double pitch) {
+    if (dist->eval_duration > 0) {
+        return (fabs(pitch - dist->eval_pitch) < 0.5);
+    }
+    return 0;
+}
+
+static int pitch_match_current(const notes_distiller *dist, const double pitch) {
+    if (dist->duration > 0) {
+        return (fabs(pitch - dist->pitch) < 0.5);
     }
     return 0;
 }
@@ -65,29 +85,32 @@ static int check_eval_and_return(notes_distiller *dist) {
 int distiller_add_event(notes_distiller *dist, const event_t *ev) {
     if (ev->pd > 0) {
         collapse_eval_note(dist);
-        distill_current(dist, ev->pd);
-        return 1;
+        if (dist->duration > 0) {
+            distill_current(dist, ev->pd);
+            return 1;
+        }
+        return 0;
     }
     const double event_pitch = freq2pitch(ev->dominant_freq);
     if (dist->status == DISTILLER_STARTING) {
-        dist->status = DISTILLER_EVAL_NEW;
-        add_event_to_eval(dist, ev);
-        return check_eval_and_return(dist);
+        dist->status = DISTILLER_ACCUMULATING;
+        add_event_to_current(dist, ev);
+        return 0;
     } else if (dist->status == DISTILLER_EVAL_NEW) {
-        if (fabs(event_pitch - dist->eval_pitch) < 0.5) {
+        if (pitch_match_eval(dist, event_pitch)) {
             add_event_to_eval(dist, ev);
             return check_eval_and_return(dist);
-        } else if (fabs(event_pitch - dist->pitch) < 0.5) {
+        } else if (pitch_match_current(dist, event_pitch)) {
             collapse_eval_note(dist);
             add_event_to_current(dist, ev);
             return 0;
         } else {
             collapse_eval_note(dist);
             add_event_to_eval(dist, ev);
-            return 1;
+            return 0;
         }
     } else if (dist->status == DISTILLER_ACCUMULATING) {
-        if (fabs(event_pitch - dist->pitch) < 0.5) {
+        if (pitch_match_current(dist, event_pitch)) {
             add_event_to_current(dist, ev);
             return 0;
         } else {
